@@ -1,0 +1,100 @@
+<div class="fvtt-treasury-root theme-{{theme}}">
+  <nav class="tabs" data-group="main">
+    {{#each tabs as |tab|}}
+      <a class="item" data-tab="{{tab.id}}"><i class="{{tab.icon}}"></i> {{tab.label}}</a>
+    {{/each}}
+  </nav>
+
+  <section class="content" data-group="main">
+    <div class="tab" data-tab="ledger">
+      <header class="ft-row ft-head">
+        <div>Label</div><div>Amount</div><div>Currency</div><div></div>
+      </header>
+      <div class="ft-row" data-ft-row>
+        <div><input type="text" name="label" placeholder="Sold goblin ears"/></div>
+        <div><input type="number" name="amount" step="0.01" value="0"/></div>
+        <div>
+          <select name="currency">
+            {{#each st.currencies as |c|}}<option value="{{c.key}}">{{c.key}}</option>{{/each}}
+          </select>
+        </div>
+        <div><button data-action="addLedger" class="ft-btn"><i class="fas fa-plus"></i> Add</button></div>
+      </div>
+
+      {{#each st.ledger as |e|}}
+        <div class="ft-row" data-id="{{e.id}}">
+          <div class="label">{{e.label}}</div>
+          <div class="amount">{{e.amount}}</div>
+          <div class="currency">{{e.currency}}</div>
+          <div class="actions"><a data-action="delLedger" class="ft-icon" title="Delete"><i class="fas fa-trash"></i></a></div>
+        </div>
+      {{/each}}
+    </div>
+
+    <div class="tab" data-tab="items">
+      <div class="ft-items-drop">Drop Items here (from compendium or Items sidebar)</div>
+      <div class="ft-items">
+        {{#each items as |it|}}
+          <div class="ft-item" data-id="{{it.id}}">
+            <div class="ft-label">{{it.label}}</div>
+            <div class="ft-uuid">{{it.uuid}}</div>
+            <div class="ft-owners">
+              Owners:
+              {{#if it.ownerNames.length}}
+                {{#each it.ownerNames as |nm|}}
+                  <span class="ft-owner">{{nm}}</span>
+                {{/each}}
+              {{else}} <span class="ft-none">none</span>
+              {{/if}}
+            </div>
+            <div class="ft-actions"><a data-action="delItem" class="ft-icon" title="Delete"><i class="fas fa-trash"></i></a></div>
+          </div>
+        {{/each}}
+      </div>
+    </div>
+
+    <div class="tab" data-tab="actors">
+      <ul class="ft-actors">
+        {{#each actors as |a|}}
+          <li>{{a.name}} ({{a.id}})</li>
+        {{/each}}
+      </ul>
+    </div>
+
+    <div class="tab" data-tab="check">
+      <div class="ft-checklist">
+        {{#each st.checklist as |c|}}
+          <label class="ft-check" data-id="{{c.id}}">
+            <input type="checkbox" {{#if c.done}}checked{{/if}} data-action="toggleCheck"/>
+            <span>{{c.label}}</span>
+          </label>
+        {{/each}}
+        {{#unless st.checklist.length}}<p class="hint">No checklist items yet.</p>{{/unless}}
+      </div>
+    </div>
+
+    <div class="tab" data-tab="settings">
+      <div class="grid">
+        <div>
+          <h3>Theme</h3>
+          <select data-action="setTheme">
+            <option value="plain" {{#if (eq theme "plain")}}selected{{/if}}>Plain</option>
+            <option value="dnd5e" {{#if (eq theme "dnd5e")}}selected{{/if}}>5E</option>
+            <option value="cyberpunk" {{#if (eq theme "cyberpunk")}}selected{{/if}}>Cyberpunk</option>
+          </select>
+        </div>
+        <div>
+          <h3>Import / Export</h3>
+          <button class="ft-btn" data-action="exportJSON"><i class="fas fa-file-export"></i> Export JSON</button>
+          <input id="ft-import-file" type="file" accept="application/json" style="display:none">
+          <button class="ft-btn" data-action="importJSON"><i class="fas fa-file-import"></i> Import JSON</button>
+        </div>
+        <div>
+          <h3>Editors</h3>
+          <p>GM and users listed as <em>Treasurers</em> may edit.</p>
+          <p>(Treasurer picker UI can be added here in a follow-up.)</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
