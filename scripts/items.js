@@ -1,4 +1,4 @@
-//v13.0.0.5
+//v13.0.0.6
 /* global foundry, game */
 
 /**
@@ -70,3 +70,4 @@ export class ItemsLinking {
     return owners;
   }
 }
+
