@@ -1,12 +1,17 @@
 <div class="fvtt-treasury-root theme-{{theme}}">
   <nav class="tabs" data-group="main">
     {{#each tabs as |tab|}}
-      <a class="item" data-tab="{{tab.id}}"><i class="{{tab.icon}}"></i> {{tab.label}}</a>
+      <a class="item"
+         data-action="tab"
+         data-group="main"
+         data-tab="{{tab.id}}">
+        <i class="{{tab.icon}}"></i> {{tab.label}}
+      </a>
     {{/each}}
   </nav>
 
   <section class="content" data-group="main">
-    <div class="tab" data-tab="ledger">
+    <div class="tab" data-group="main" data-tab="ledger">
       <header class="ft-row ft-head">
         <div>Label</div><div>Amount</div><div>Currency</div><div></div>
       </header>
@@ -31,7 +36,7 @@
       {{/each}}
     </div>
 
-    <div class="tab" data-tab="items">
+    <div class="tab" data-group="main" data-tab="items">
       <div class="ft-items-drop">Drop Items here (from compendium or Items sidebar)</div>
       <div class="ft-items">
         {{#each items as |it|}}
@@ -53,7 +58,7 @@
       </div>
     </div>
 
-    <div class="tab" data-tab="actors">
+    <div class="tab" data-group="main" data-tab="actors">
       <ul class="ft-actors">
         {{#each actors as |a|}}
           <li>{{a.name}} ({{a.id}})</li>
@@ -61,7 +66,7 @@
       </ul>
     </div>
 
-    <div class="tab" data-tab="check">
+    <div class="tab" data-group="main" data-tab="check">
       <div class="ft-checklist">
         {{#each st.checklist as |c|}}
           <label class="ft-check" data-id="{{c.id}}">
@@ -73,7 +78,7 @@
       </div>
     </div>
 
-    <div class="tab" data-tab="settings">
+    <div class="tab" data-group="main" data-tab="settings">
       <div class="grid">
         <div>
           <h3>Theme</h3>
