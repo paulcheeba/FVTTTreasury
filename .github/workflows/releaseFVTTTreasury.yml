@@ -1,10 +1,10 @@
-name: Publish Release (FVTTTreasury)
+name: Publish Release
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Module version (e.g. 13.0.0.1)"
+        description: "Module version (e.g. 13.0.0.0)"
         required: true
         type: string
       prerelease:
@@ -18,56 +18,102 @@ on:
         default: false
         type: boolean
       make_latest:
-        description: "Mark this release as the latest?"
+        description: "Make this the 'latest' release? (true | false | legacy)"
         required: false
-        default: true
-        type: boolean
+        default: "true"
+        type: choice
+        options: [ "true", "false", "legacy" ]
+
+permissions:
+  contents: write
 
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write  # needed to create releases & upload assets
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Sanity check required files
+      - name: Show context
         run: |
-          test -f FVTTTreasury/module.json || { echo "Missing FVTTTreasury/module.json"; exit 1; }
-          test -f FVTTTreasury/readme.md   || { echo "Missing FVTTTreasury/readme.md"; exit 1; }
+          echo "GITHUB_REPOSITORY=${GITHUB_REPOSITORY}"
+          echo "github.ref=${{ github.ref }}"
+          echo "github.ref_name=${{ github.ref_name }}"
+          echo "github.ref_type=${{ github.ref_type }}"
+          echo "inputs.version=${{ inputs.version }}"
 
-      - name: Set up tooling
-        run: sudo apt-get update && sudo apt-get install -y jq zip perl
-
-      - name: Patch module.json version (no URL changes)
+      - name: Ensure jq & zip are available
         run: |
-          jq --arg v "${{ inputs.version }}" '.version = $v' \
-            FVTTTreasury/module.json > FVTTTreasury/module.json.tmp
-          mv FVTTTreasury/module.json.tmp FVTTTreasury/module.json
-          echo "module.json version -> $(jq -r '.version' FVTTTreasury/module.json)"
+          sudo apt-get update
+          sudo apt-get install -y jq zip
 
-      - name: Patch README version heading
+      - name: Validate module.json presence
         run: |
-          FILE="FVTTTreasury/readme.md"
-          # Replace 'FVTTTreasury (v...)' heading with the requested version if present.
-          # If the pattern isn't present, do nothing (keeps README untouched).
-          perl -0777 -pe 's/(^#\s*FVTTTreasury\s*\(v)[^)]+(\))/\1${{ inputs.version }}\2/m' -i "$FILE" || true
-          echo "Top of README after patch:"
-          head -n 5 "$FILE" || true
+          test -f module.json || (echo "module.json not found at repo root." && exit 1)
 
-      - name: Prepare release assets
+      - name: Rewrite module.json (version, manifest, download)
+        shell: bash
         run: |
-          # Provide a copy of the manifest at the repo root so the asset is named module.json
-          cp FVTTTreasury/module.json module.json
-          # Zip contents of FVTTTreasury so module.json is at the zip root
-          pushd FVTTTreasury
-          zip -r ../fvtt-treasury.zip .
-          popd
-          ls -la
-          echo "Zip contents:"
-          unzip -l fvtt-treasury.zip | head -n 40 || true
+          set -euo pipefail
+          REPO="${GITHUB_REPOSITORY}"
+          VERSION="${{ inputs.version }}"
+
+          MANIFEST_URL="https://github.com/${REPO}/releases/latest/download/module.json"
+          DOWNLOAD_URL="https://github.com/${REPO}/releases/latest/download/FVTTTreasury.zip"
+
+          cp module.json module.json.bak
+
+          jq --arg v "$VERSION" \
+             --arg manifest "$MANIFEST_URL" \
+             --arg download "$DOWNLOAD_URL" \
+             '
+             .version = $v
+             | .manifest = $manifest
+             | .download = $download
+             ' module.json > module.json.tmp
+
+          mv module.json.tmp module.json
+
+          echo "Updated module.json to version ${VERSION}:"
+          cat module.json
+
+      - name: Commit updated module.json to main (if on main)
+        if: ${{ endsWith(github.ref, '/main') }}
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add module.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Release v${{ inputs.version }}: update module.json"
+            git push origin HEAD:main
+          fi
+
+      - name: Build ZIP (FVTTTreasury.zip)
+        shell: bash
+        run: |
+          set -euo pipefail
+          ZIPNAME="FVTTTreasury.zip"
+          rm -f "$ZIPNAME"
+          # Create a clean ZIP with module files at the root.
+          zip -r "$ZIPNAME" . \
+            -x ".git/*" \
+               ".github/*" \
+               ".gitignore" \
+               "docs/*" \
+               ".DS_Store"
+          [ -f "$ZIPNAME" ] || (echo "ZIP was not produced." && exit 1)
+          echo "ZIP contents:"
+          unzip -l "$ZIPNAME"
+
+      - name: Verify release assets exist
+        run: |
+          test -f FVTTTreasury.zip || (echo "FVTTTreasury.zip missing"; exit 1)
+          test -f module.json || (echo "module.json missing"; exit 1)
 
       - name: Create/Update GitHub Release & Upload Assets
         uses: softprops/action-gh-release@v2
@@ -79,7 +125,7 @@ jobs:
           make_latest: ${{ inputs.make_latest }}
           generate_release_notes: true
           files: |
-            fvtt-treasury.zip
+            FVTTTreasury.zip
             module.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
