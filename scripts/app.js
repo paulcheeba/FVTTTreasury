@@ -1,4 +1,4 @@
-//v13.0.0.5
+//v13.0.0.6
 /* global foundry, game, Handlebars, ui */
 import { getState, isEditor, getRefreshSec, getTheme } from "./settings.js";
 import { State } from "./state.js";
@@ -66,7 +66,8 @@ export class FVTTTreasuryApp extends BaseApp {
       { id: "settings", label: "Settings",  icon: "fas fa-gear" }
     ];
 
-    return { st, editor, actors, items, theme, treasurers: st.treasurers ?? [], tabs };
+    const activeTab = this.tabGroups?.main ?? "ledger";
+    return { st, editor, actors, items, theme, treasurers: st.treasurers ?? [], tabs, activeTab };
   }
 
   /**
@@ -194,3 +195,4 @@ export class FVTTTreasuryApp extends BaseApp {
     await State.mutate("set-theme", { theme });
   }
 }
+
