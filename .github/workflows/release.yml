@@ -1,21 +1,26 @@
-name: Release FVTTTreasury (Manual)
+name: Publish Release (FVTTTreasury)
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to set (e.g., 13.0.0.1)"
+        description: "Module version (e.g. 13.0.0.1)"
         required: true
         type: string
-      draft:
-        description: "Create the GitHub release as a draft?"
+      prerelease:
+        description: "Mark as pre-release?"
         required: false
         default: false
         type: boolean
-      prerelease:
-        description: "Mark the GitHub release as a prerelease?"
+      draft:
+        description: "Create as draft?"
         required: false
         default: false
+        type: boolean
+      make_latest:
+        description: "Mark this release as the latest?"
+        required: false
+        default: true
         type: boolean
 
 jobs:
@@ -23,50 +28,58 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write  # needed to create releases & upload assets
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up tools
-        run: sudo apt-get update && sudo apt-get install -y jq zip
-
-      - name: Validate inputs and files
+      - name: Sanity check required files
         run: |
-          test -n "${{ inputs.version }}" || { echo "version input is required"; exit 1; }
-          test -f FVTTTreasury/module.json || { echo "FVTTTreasury/module.json not found"; exit 1; }
-          test -f FVTTTreasury/readme.md || { echo "FVTTTreasury/readme.md not found"; exit 1; }
+          test -f FVTTTreasury/module.json || { echo "Missing FVTTTreasury/module.json"; exit 1; }
+          test -f FVTTTreasury/readme.md   || { echo "Missing FVTTTreasury/readme.md"; exit 1; }
+
+      - name: Set up tooling
+        run: sudo apt-get update && sudo apt-get install -y jq zip perl
 
       - name: Patch module.json version (no URL changes)
         run: |
-          jq --arg v "${{ inputs.version }}" '.version = $v' FVTTTreasury/module.json > FVTTTreasury/module.json.tmp
+          jq --arg v "${{ inputs.version }}" '.version = $v' \
+            FVTTTreasury/module.json > FVTTTreasury/module.json.tmp
           mv FVTTTreasury/module.json.tmp FVTTTreasury/module.json
-          echo "module.json version → $(jq -r '.version' FVTTTreasury/module.json)"
+          echo "module.json version -> $(jq -r '.version' FVTTTreasury/module.json)"
 
-      - name: Patch README version (search/replace)
+      - name: Patch README version heading
         run: |
           FILE="FVTTTreasury/readme.md"
-          # Replace 'FVTTTreasury (vX.Y.Z.W)' with the provided version, preserving formatting.
-          perl -0777 -pe 's/(FVTTTreasury\s*\(v)[^)]+(\))/\1'${{ inputs.version }}'\2/' -i "$FILE"
-          echo "Patched README heading:"
-          head -n 3 "$FILE" || true
+          # Replace 'FVTTTreasury (v...)' heading with the requested version if present.
+          # If the pattern isn't present, do nothing (keeps README untouched).
+          perl -0777 -pe 's/(^#\s*FVTTTreasury\s*\(v)[^)]+(\))/\1${{ inputs.version }}\2/m' -i "$FILE" || true
+          echo "Top of README after patch:"
+          head -n 5 "$FILE" || true
 
       - name: Prepare release assets
         run: |
-          # Copy manifest to repo root so the asset name is module.json
+          # Provide a copy of the manifest at the repo root so the asset is named module.json
           cp FVTTTreasury/module.json module.json
-          # Zip the module with module.json at the root of the archive
+          # Zip contents of FVTTTreasury so module.json is at the zip root
           pushd FVTTTreasury
-          zip -r "../FVTTTreasury-${{ inputs.version }}.zip" .
+          zip -r ../fvtt-treasury.zip .
           popd
           ls -la
+          echo "Zip contents:"
+          unzip -l fvtt-treasury.zip | head -n 40 || true
 
-      - name: Create/Update GitHub Release
+      - name: Create/Update GitHub Release & Upload Assets
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ inputs.version }}
-          name: FVTTTreasury ${{ inputs.version }}
+          name: v${{ inputs.version }}
           draft: ${{ inputs.draft }}
           prerelease: ${{ inputs.prerelease }}
+          make_latest: ${{ inputs.make_latest }}
+          generate_release_notes: true
           files: |
+            fvtt-treasury.zip
             module.json
-            FVTTTreasury-${{ inputs.version }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
