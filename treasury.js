@@ -6,8 +6,8 @@ import { FVTTTreasuryApp } from "./scripts/app.js";
 export const MODULE_ID = "fvtt-treasury";
 
 Hooks.once("init", () => {
-  // tiny helper used in templates
-  try { Handlebars.registerHelper("eq", (a,b)=>a===b); } catch (e) {}
+  // Helper for templates
+  try { Handlebars.registerHelper("eq", (a, b) => a === b); } catch (e) {}
   registerSettings();
 });
 
