@@ -1,4 +1,4 @@
-//v13.0.0.4
+//v13.0.0.5
 /* global foundry, game, Handlebars, ui */
 import { getState, isEditor, getRefreshSec, getTheme } from "./settings.js";
 import { State } from "./state.js";
@@ -26,8 +26,8 @@ export class FVTTTreasuryApp extends BaseApp {
       toggleCheck: (ev, t) => this.instance?._actionToggleCheck(ev, t),
       exportJSON: () => IO.exportJSON(),
       importJSON: (ev, target) => this.instance?._actionImport(ev, target),
-      setTheme: (ev, target) => this.instance?._actionSetTheme(ev, target),
-      // Let built-in "tab" action handle clicks; we still re-apply on render.
+      setTheme: (ev, target) => this.instance?._actionSetTheme(ev, target)
+      // Built-in "tab" action handles tab clicks via data-action="tab"
     }
   };
 
@@ -70,18 +70,10 @@ export class FVTTTreasuryApp extends BaseApp {
   }
 
   /**
-   * Make sure the currently active tab remains active after every render.
-   * Also, (re)wire drop targets and the import input, and (re)start the refresh timer.
+   * Re-apply active tab after each render and wire listeners.
    */
   async _onRender() {
-    // Re-apply the active tab; default to ledger if unknown
-    try {
-      const desired = this.tabGroups?.main ?? "ledger";
-      this.changeTab(desired, "main", { updatePosition: false });
-    } catch (e) {
-      // If anything went wrong, force ledger as a safe fallback
-      try { this.changeTab("ledger", "main", { updatePosition: false }); } catch {}
-    }
+    this._applyActiveTab();
 
     // Drop zone for Items tab
     const dropZone = this.element.querySelector(".ft-items-drop");
@@ -101,6 +93,15 @@ export class FVTTTreasuryApp extends BaseApp {
       });
     }
 
+    // Remember tab when user clicks one (so we reopen to the same tab after refresh)
+    const nav = this.element.querySelector('nav.tabs[data-group="main"]');
+    if (nav) {
+      nav.addEventListener("click", (ev) => {
+        const el = ev.target?.closest('[data-action="tab"][data-tab]');
+        if (el) this.tabGroups.main = el.dataset.tab;
+      });
+    }
+
     // File import input
     const file = this.element.querySelector("#ft-import-file");
     if (file) file.addEventListener("change", async (ev) => {
@@ -113,12 +114,31 @@ export class FVTTTreasuryApp extends BaseApp {
     // Restart auto-refresh (avoid stacking intervals)
     clearInterval(this._interval);
     const sec = Math.max(5, Number(getRefreshSec() || 10));
+
+    // Full-window refresh per your request: reopen the application every N seconds.
     this._interval = setInterval(() => {
-      // Persist whichever tab is active right now before re-rendering
+      // Persist whichever tab is active right now before refresh
       const active = this.element.querySelector('.tab.active[data-group="main"]')?.dataset?.tab;
       if (active) this.tabGroups.main = active;
-      this.render(false);
+
+      // Re-render the entire window (not just parts)
+      this.render(true);
     }, sec * 1000);
+  }
+
+  /**
+   * Ensure the tab indicated by this.tabGroups.main is active.
+   * Call twice (immediate + next frame) to avoid race conditions on first paint.
+   */
+  _applyActiveTab() {
+    const desired = this.tabGroups?.main ?? "ledger";
+    try { this.changeTab(desired, "main", { updatePosition: false }); } catch {}
+    // In case the DOM hasn't fully settled yet, try again on next animation frame.
+    try {
+      requestAnimationFrame(() => {
+        try { this.changeTab(desired, "main", { updatePosition: false }); } catch {}
+      });
+    } catch {}
   }
 
   async close(options = {}) {
