@@ -1,4 +1,5 @@
-/* global foundry, game, Handlebars */
+//v13.0.0.3
+/* global foundry, game, Handlebars, ui */
 import { getState, isEditor, getRefreshSec, getTheme } from "./settings.js";
 import { State } from "./state.js";
 import { ItemsLinking } from "./items.js";
@@ -9,6 +10,9 @@ const BaseApp = HandlebarsApplicationMixin(ApplicationV2);
 
 export class FVTTTreasuryApp extends BaseApp {
   static instance;
+
+  // Ensure an initial tab is recorded
+  tabGroups = { main: "ledger" };
 
   static DEFAULT_OPTIONS = {
     id: "fvtt-treasury",
@@ -30,20 +34,7 @@ export class FVTTTreasuryApp extends BaseApp {
     body: { template: "modules/fvtt-treasury/scripts/handlebars/app.hbs" }
   };
 
-  static TABS = {
-    main: {
-      initial: "ledger",
-      tabs: [
-        {id:"ledger", label:"Ledger", icon:"fas fa-book" },
-        {id:"items",  label:"Items",  icon:"fas fa-box" },
-        {id:"actors", label:"Actors", icon:"fas fa-users" },
-        {id:"check",  label:"Checklist", icon:"fas fa-list-check" },
-        {id:"settings", label:"Settings", icon:"fas fa-gear" }
-      ]
-    }
-  };
-
-  constructor(options={}) {
+  constructor(options = {}) {
     super(options);
     FVTTTreasuryApp.instance = this;
     this._interval = null;
@@ -52,8 +43,8 @@ export class FVTTTreasuryApp extends BaseApp {
   async _prepareContext() {
     const st = getState();
     const editor = isEditor(game.user);
-    const actors = game.actors.contents.map(a => ({id:a.id, name:a.name}));
-    const map = new Map(actors.map(a=>[a.id,a.name]));
+    const actors = game.actors.contents.map(a => ({ id: a.id, name: a.name }));
+    const map = new Map(actors.map(a => [a.id, a.name]));
 
     // Compute item ownership (read-only)
     const items = st.items.map(it => {
@@ -66,12 +57,22 @@ export class FVTTTreasuryApp extends BaseApp {
     });
 
     const theme = getTheme();
-    const tabs = this.constructor.TABS.main.tabs;
+    const tabs = [
+      { id: "ledger", label: "Ledger", icon: "fas fa-book" },
+      { id: "items", label: "Items", icon: "fas fa-box" },
+      { id: "actors", label: "Actors", icon: "fas fa-users" },
+      { id: "check", label: "Checklist", icon: "fas fa-list-check" },
+      { id: "settings", label: "Settings", icon: "fas fa-gear" }
+    ];
+
     return { st, editor, actors, items, theme, treasurers: st.treasurers, tabs };
   }
 
   async _onRender() {
-    // Set up drop zone for Items tab
+    // Activate the initial tab explicitly (AppV2 doesn't do it for you)
+    try { this.changeTab(this.tabGroups.main ?? "ledger", "main"); } catch {}
+
+    // Drop zone for Items tab
     const dropZone = this.element.querySelector(".ft-items-drop");
     if (dropZone) {
       dropZone.addEventListener("dragover", ev => ev.preventDefault());
@@ -81,7 +82,10 @@ export class FVTTTreasuryApp extends BaseApp {
         const parsed = await ItemsLinking.parseDrop(ev);
         if (!parsed) return;
         await State.mutate("add-item", {
-          ts: new Date().toISOString(), label: parsed.label, uuid: parsed.uuid, notes: ""
+          ts: new Date().toISOString(),
+          label: parsed.label,
+          uuid: parsed.uuid,
+          notes: ""
         });
       });
     }
@@ -101,7 +105,7 @@ export class FVTTTreasuryApp extends BaseApp {
     this._interval = setInterval(() => this.render(false), sec * 1000);
   }
 
-  async close(options={}) {
+  async close(options = {}) {
     clearInterval(this._interval);
     return super.close(options);
   }
@@ -115,7 +119,12 @@ export class FVTTTreasuryApp extends BaseApp {
     const currency = row.querySelector('select[name="currency"]').value;
     if (!label) return ui.notifications.warn("Enter a label");
     await State.mutate("add-ledger", {
-      ts: new Date().toISOString(), label, amount, currency, participantsActorIds: [], notes:""
+      ts: new Date().toISOString(),
+      label,
+      amount,
+      currency,
+      participantsActorIds: [],
+      notes: ""
     });
   }
 
