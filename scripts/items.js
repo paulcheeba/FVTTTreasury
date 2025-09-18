@@ -1,18 +1,24 @@
-//v13.0.0.4
-/* global foundry, game, TextEditor */
+//v13.0.0.5
+/* global foundry, game */
 
 /**
  * ItemsLinking
  * - Parse drops from compendia or the Items directory (we store only a UUID + label).
  * - Determine which actors own an item originating from a given UUID.
  *
- * v13 change: `core.sourceId` is deprecated. Prefer `_stats.compendiumSource`.
- * We avoid `getFlag("core","sourceId")` (which logs a deprecation warning)
- * and instead read `item.flags?.core?.sourceId` directly as a quiet fallback.
+ * v13 changes:
+ *  - Global TextEditor is deprecated. Use foundry.applications.ux.TextEditor.implementation
+ *  - core.sourceId is deprecated. Prefer _stats.compendiumSource; quietly fall back to flags.core.sourceId
  */
 export class ItemsLinking {
+  static get TextEditorImpl() {
+    // v13+ location; falls back if an older system provides global (kept for safety)
+    return foundry?.applications?.ux?.TextEditor?.implementation ?? globalThis.TextEditor;
+  }
+
   static async parseDrop(event) {
-    const data = TextEditor.getDragEventData(event);
+    const TE = this.TextEditorImpl;
+    const data = TE?.getDragEventData ? TE.getDragEventData(event) : null;
     const uuid = data?.uuid;
     if (!uuid) return null;
 
@@ -31,16 +37,11 @@ export class ItemsLinking {
    * Safely read the "source UUID" of an embedded Item.
    * Priority:
    *  1) item._stats.compendiumSource  (v12+, preferred)
-   *  2) item.flags.core.sourceId      (deprecated fallback, read directly)
-   * Returns null if neither exists.
+   *  2) item.flags.core.sourceId      (deprecated fallback, read directly; do not call getFlag)
    */
   static sourceUUID(item) {
-    // Preferred (no warnings)
     const compSrc = item?._stats?.compendiumSource ?? null;
-
-    // Quiet fallback (do not call getFlag to avoid warnings)
-    const legacy = item?.flags?.core?.sourceId ?? null;
-
+    const legacy  = item?.flags?.core?.sourceId ?? null; // quiet fallback
     return compSrc ?? legacy ?? null;
   }
 
@@ -51,8 +52,6 @@ export class ItemsLinking {
       const src = this.sourceUUID(i);
       if (!src) continue;
       if (src === sourceUuid) return true;
-      // Extra tolerance: sometimes compendiumSource includes full UUID while
-      // older flags might differ only by lowercase/uppercase. Normalize.
       if (typeof src === "string" && typeof sourceUuid === "string") {
         if (src.toLowerCase() === sourceUuid.toLowerCase()) return true;
       }
