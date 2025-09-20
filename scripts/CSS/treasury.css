@@ -1,14 +1,14 @@
 /* ========================================================================
    FVTTTreasury — Complete Stylesheet
+   Version: v13.0.0.19
    Path: modules/fvtt-treasury/scripts/CSS/treasury.css
    ------------------------------------------------------------------------
-   - Namespaced under .fvtt-treasury (set via ApplicationV2 classes)
-   - AppV2 tabs driven by foundry.applications.ux.Tabs
-   - Active tab gets an orange glow
-   - Simple, theme-able scaffolding
+   - Namespaced under .fvtt-treasury
+   - AppV2 tabs via foundry.applications.api.ApplicationV2
+   - Sectionalized: Base, Tabs, Buttons, Utilities, Settings, Tabs content
    ====================================================================== */
 
-/* ----------------------------- Root/Layout ----------------------------- */
+/* ========== Base / Layout ================================================= */
 
 .fvtt-treasury .ft-root {
   padding: 8px;
@@ -17,19 +17,16 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  /* inherit Foundry fonts/variables */
   font-family: var(--font-primary);
-  color: var(--color-text-light-primary, #ffffff);
+  color: var(--color-text-light-primary, #fff);
 }
 
-/* Allow the content area to scroll if needed */
 .fvtt-treasury .ft-tabs {
   flex: 1 1 auto;
   overflow: auto;
   position: relative;
 }
 
-/* Section headers */
 .fvtt-treasury .ft-section h3 {
   margin: 0 0 .5rem;
   font-weight: 600;
@@ -38,15 +35,13 @@
   gap: .5rem;
 }
 
-/* Small hint text */
 .fvtt-treasury .hint {
-  opacity: 0.7;
+  opacity: .7;
   font-style: italic;
 }
 
-/* ------------------------------- Tabs UI ------------------------------- */
+/* ========== Tabs Bar ===================================================== */
 
-/* Tabs header bar */
 .fvtt-treasury nav.tabs.ft-tabs-bar {
   display: flex;
   flex-wrap: wrap;
@@ -54,7 +49,6 @@
   margin: 0 0 6px;
 }
 
-/* Individual tab link */
 .fvtt-treasury nav.tabs.ft-tabs-bar a.tab-link {
   display: inline-flex;
   align-items: center;
@@ -68,38 +62,32 @@
   transition: box-shadow .15s ease, color .15s ease, background .15s ease;
 }
 
-/* Hover/Focus state */
 .fvtt-treasury nav.tabs.ft-tabs-bar a.tab-link:hover,
 .fvtt-treasury nav.tabs.ft-tabs-bar a.tab-link:focus-visible {
   background: var(--color-border-light, rgb(41 6 6));
-  box-shadow: 0 0 0 1px rgba(255,165,0,0.25) inset, 0 0 0 2px rgba(255,165,0,0.10);
+  box-shadow: 0 0 0 1px rgba(255,165,0,.25) inset, 0 0 0 2px rgba(255,165,0,.10);
   outline: none;
 }
 
-/* Active tab: orange glow as requested */
 .fvtt-treasury nav.tabs.ft-tabs-bar a.tab-link.active {
   color: #ffb164 !important;
-  text-shadow: 0 0 6px rgb(255 165 0 / 85%), 0 0 10px rgba(255,140,0,0.5);
-  box-shadow: 0 0 0 1px rgba(255,165,0,0.25) inset, 0 0 0 2px rgba(255,165,0,0.10);
+  text-shadow: 0 0 6px rgba(255,165,0,.85), 0 0 10px rgba(255,140,0,.5);
+  box-shadow: 0 0 0 1px rgba(255,165,0,.25) inset, 0 0 0 2px rgba(255,165,0,.10);
   font-weight: 600;
 }
 
-/* Content panels: hide non-active, show active */
-.fvtt-treasury .ft-tabs .tab {
-  display: none;
-}
-
+/* Panels */
+.fvtt-treasury .ft-tabs .tab { display: none; }
 .fvtt-treasury .ft-tabs .tab.active {
   display: block;
   animation: ft-fade-in .12s ease-out;
 }
-
 @keyframes ft-fade-in {
   from { opacity: 0; transform: translateY(2px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* --------------------------- Inputs & Controls ------------------------- */
+/* ========== Controls / Inputs / Buttons ================================= */
 
 .fvtt-treasury input[type="text"],
 .fvtt-treasury input[type="number"],
@@ -110,7 +98,6 @@
   font-size: 12px;
 }
 
-/* Make text/number/select stretch nicely in grid rows */
 .fvtt-treasury input[type="text"],
 .fvtt-treasury input[type="number"],
 .fvtt-treasury select {
@@ -118,7 +105,6 @@
   box-sizing: border-box;
 }
 
-/* Buttons */
 .fvtt-treasury .ft-btn {
   padding: .25rem .5rem;
   border-radius: 6px;
@@ -126,12 +112,8 @@
   background: var(--color-bg-btn, #381c1c);
   cursor: pointer;
 }
+.fvtt-treasury .ft-btn:hover { filter: brightness(0.98); }
 
-.fvtt-treasury .ft-btn:hover {
-  filter: brightness(0.98);
-}
-
-/* Icon buttons (trash, etc.) */
 .fvtt-treasury .ft-icon {
   cursor: pointer;
   border: none;
@@ -140,67 +122,31 @@
   padding: 4px 6px;
   border-radius: 6px;
 }
-
 .fvtt-treasury .ft-icon:hover {
-  background: var(--color-border-light-2, rgba(0,0,0,0.06));
+  background: var(--color-border-light-2, rgba(0,0,0,.06));
 }
 
-/* ------------------------------ Grid Rows ------------------------------ */
-
-/* General row used for inputs at top of Ledger tab */
+/* Generic row layout used in some tabs */
 .fvtt-treasury .ft-row {
   display: grid;
-  grid-template-columns: 1.4fr .7fr .6fr auto; /* label | amount | currency | add btn */
+  grid-template-columns: 1.4fr .7fr .6fr auto;
   gap: .5rem;
   align-items: center;
   margin: .5rem 0;
 }
-
-/* Responsive collapse */
 @media (max-width: 720px) {
-  .fvtt-treasury .ft-row {
-    grid-template-columns: 1fr 1fr;
-  }
+  .fvtt-treasury .ft-row { grid-template-columns: 1fr 1fr; }
 }
 
-/* ------------------------------- Lists --------------------------------- */
+/* Lists */
+.fvtt-treasury .ft-list { list-style: none; padding: 0; margin: .5rem 0 0 0; }
+.fvtt-treasury .ft-item { display: grid; grid-template-columns: 17.5fr 2fr .5fr; gap: .5rem; align-items: center; padding: .25rem 0; border-bottom: 1px solid var(--color-border-light-2,#ccc); }
+.fvtt-treasury .ft-item:last-child { border-bottom: 0; }
+.fvtt-treasury .ft-label { font-weight: 500; }
+.fvtt-treasury .ft-amt { opacity: .85; }
+.fvtt-treasury .ft-owners { display: inline-block; margin-left: .5rem; font-size: 11px; opacity: .8; }
 
-.fvtt-treasury .ft-list {
-  list-style: none;
-  padding: 0;
-  margin: .5rem 0 0 0;
-}
-
-.fvtt-treasury .ft-item {
-  display: grid;
-  grid-template-columns: 17.5fr 2fr 0.5fr;
-  gap: .5rem;
-  align-items: center;
-  padding: .25rem 0;
-  border-bottom: 1px solid var(--color-border-light-2, #ccc);
-}
-
-.fvtt-treasury .ft-item:last-child {
-  border-bottom: 0;
-}
-
-.fvtt-treasury .ft-label {
-  font-weight: 500;
-}
-
-.fvtt-treasury .ft-amt {
-  opacity: 0.85;
-}
-
-.fvtt-treasury .ft-owners {
-  display: inline-block;
-  margin-left: .5rem;
-  font-size: 11px;
-  opacity: .8;
-}
-
-/* ------------------------------ Drop Zone ------------------------------ */
-
+/* Drop Zones */
 .fvtt-treasury .ft-dropzone,
 .fvtt-treasury .ft-items-drop {
   border: 2px dashed var(--color-border-light-primary, #888);
@@ -209,83 +155,82 @@
   margin-bottom: .5rem;
   text-align: center;
   color: var(--color-text-dark-secondary, #575757);
-  background: var(--color-bg-option, rgba(0,0,0,0.02));
+  background: var(--color-bg-option, rgba(0,0,0,.02));
 }
-
-/* Visual feedback when dragging (if you add a class in JS) */
 .fvtt-treasury .ft-dropzone.is-dragover,
 .fvtt-treasury .ft-items-drop.is-dragover {
-  background: rgba(255,165,0,0.07);
+  background: rgba(255,165,0,.07);
   border-color: #ffb164;
-  box-shadow: 0 0 0 1px rgba(255,165,0,0.2) inset;
+  box-shadow: 0 0 0 1px rgba(255,165,0,.2) inset;
 }
 
-/* ------------------------------ Themes --------------------------------- */
-/* Keep these minimal; users can extend later. Apply theme class to root.
-   Your app currently sets theme via state; mirror here for easy overrides. */
+/* ========== Themes ======================================================= */
 
-/* Plain (default) */
 .fvtt-treasury.theme-plain .ft-root {}
-
-/* 5E — support both "dnd5e" and "5e" values */
-.fvtt-treasury.theme-dnd5e .ft-root,
-.fvtt-treasury.theme-5e .ft-root {
-  --ft-acc: #8b0000;
-}
+.fvtt-treasury.theme-dnd5e .ft-root, .fvtt-treasury.theme-5e .ft-root { --ft-acc: #8b0000; }
 .fvtt-treasury.theme-dnd5e nav.tabs.ft-tabs-bar a.tab-link.active,
 .fvtt-treasury.theme-5e  nav.tabs.ft-tabs-bar a.tab-link.active {
-  color: #ffb164 !important; /* keep the orange glow per request */
+  color: #ffb164 !important;
 }
-
-/* Cyberpunk */
-.fvtt-treasury.theme-cyberpunk .ft-root {
-  --ft-acc: #00ffd1;
-}
+.fvtt-treasury.theme-cyberpunk .ft-root { --ft-acc: #00ffd1; }
 .fvtt-treasury.theme-cyberpunk nav.tabs.ft-tabs-bar a.tab-link.active {
   color: #00ffd1 !important;
-  text-shadow: 0 0 8px rgba(0,255,209,0.8), 0 0 14px rgba(0,255,209,0.5);
-  box-shadow: 0 0 0 1px rgba(0,255,209,0.25) inset, 0 0 0 2px rgba(0,255,209,0.10);
+  text-shadow: 0 0 8px rgba(0,255,209,.8), 0 0 14px rgba(0,255,209,.5);
+  box-shadow: 0 0 0 1px rgba(0,255,209,.25) inset, 0 0 0 2px rgba(0,255,209,.10);
 }
 
-/* --------------------------- Small Utilities --------------------------- */
+/* ========== Utilities ==================================================== */
 
 .fvtt-treasury .sr-only {
   position: absolute !important;
   height: 1px; width: 1px;
-  overflow: hidden; clip: rect(1px, 1px, 1px, 1px);
+  overflow: hidden; clip: rect(1px,1px,1px,1px);
   white-space: nowrap; border: 0; padding: 0; margin: -1px;
 }
+.fvtt-treasury .ft-uuid { font-family: var(--font-monospace); font-size: 11px; opacity: .8; word-break: break-all; }
 
-/* Make UUID text look mono if you decide to show it anywhere */
-.fvtt-treasury .ft-uuid {
-  font-family: var(--font-monospace);
-  font-size: 11px;
-  opacity: 0.8;
-  word-break: break-all;
-}
-
-/* Settings form rows */
-.fvtt-treasury-settings .ft-currency-row {
-  display: grid; grid-template-columns: 1fr 2fr 1fr; gap: .5rem;
-  margin: .25rem 0;
-}
+/* Settings sheet helpers */
+.fvtt-treasury-settings .ft-currency-row { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: .5rem; margin: .25rem 0; }
 .fvtt-treasury-settings .ft-section h3 { margin: 0 0 .5rem; }
 .fvtt-treasury-settings .ft-list { margin-top: .25rem; }
 .fvtt-treasury-settings .ft-item { display: flex; align-items: center; justify-content: space-between; padding: .25rem 0; border-bottom: 1px solid var(--color-border-light-2,#ccc); }
 .fvtt-treasury-settings .ft-item:last-child { border-bottom: 0; }
 
-/* Group Coin grid */
+/* ========================================================================
+   Group Coin Tab
+   - Toolbar, Log Table (sticky header), Totals, Entry Form
+   ====================================================================== */
+
+/* Toolbar */
 .fvtt-treasury .gc-toolbar { margin: .25rem 0 .5rem; display: flex; gap: .5rem; align-items: center; }
 
-.fvtt-treasury .gc-grid {
-  display: grid;
-  grid-template-columns: 40px repeat(auto-fill, minmax(120px, 1fr));
-  /* The number of data columns is set by template; header/row cells align via explicit renders */
-  gap: 2px;
-  align-items: stretch;
+/* Log table container: this is the scroller */
+.fvtt-treasury .gc-logwrap {
+  position: relative;
+  max-height: 320px;
+  overflow: auto;              /* only this element should scroll */
+  border: 1px solid var(--color-border-light-2,#555);
+  border-radius: 6px;
 }
 
-/* Column separators + cell look */
+/* Table basics */
+.fvtt-treasury .gc-log {
+  width: 100%;
+  border-collapse: separate;   /* sticky header works reliably with separate */
+  border-spacing: 0;
+}
+
+/* Header cells: sticky */
+.fvtt-treasury .gc-log thead th.gc-th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--color-bg-option, rgba(0,0,0,.45));
+  backdrop-filter: blur(2px);
+  box-shadow: 0 1px 0 0 var(--color-border-light-2,#444), 0 2px 6px rgba(0,0,0,.2);
+}
+
+/* Cells & separators */
 .fvtt-treasury .gc-log th.gc-th,
 .fvtt-treasury .gc-log td.gc-td {
   border-right: 1px solid var(--color-border-light-2,#444);
@@ -293,27 +238,41 @@
   padding: 4px 6px;
   vertical-align: top;
 }
+.fvtt-treasury .gc-log th.gc-th:last-child,
+.fvtt-treasury .gc-log td.gc-td:last-child { border-right: 0; }
 
-/* Inputs */
-.fvtt-treasury .gc-input { width: 50%; box-sizing: border-box; }
+/* Inputs inside table */
+.fvtt-treasury .gc-input { width: 100%; box-sizing: border-box; }
 .fvtt-treasury .gc-input-coin { width: 6.5ch; text-align: right; }
 .fvtt-treasury .gc-input-text { width: 100%; resize: vertical; }
+.fvtt-treasury .gc-td textarea.gc-input-text { min-height: 2.2em; white-space: pre-wrap; }
 
+/* Totals row */
+.fvtt-treasury .gc-totals {
+  margin-top: .5rem;
+  display: flex; flex-wrap: wrap;
+  gap: .75rem;
+}
+
+/* Entry form with two rows */
+.fvtt-treasury .gc-entry { margin-top: .75rem; display: flex; flex-direction: column; gap: .5rem; }
+.fvtt-treasury .gc-entry .gc-form-row { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.fvtt-treasury .gc-entry .gc-coins { display: flex; flex-wrap: wrap; gap: .5rem; }
+.fvtt-treasury .gc-entry .gc-coin-field { display: flex; align-items: center; gap: .25rem; }
+
+/* ========================================================================
+   (Optional) Spreadsheet-style grid (legacy experimental area)
+   ====================================================================== */
+
+.fvtt-treasury .gc-grid {
+  display: grid;
+  grid-template-columns: 40px repeat(auto-fill, minmax(120px, 1fr));
+  gap: 2px;
+  align-items: stretch;
+}
 .fvtt-treasury .gc-head-corner,
 .fvtt-treasury .gc-colhead,
 .fvtt-treasury .gc-rowhead,
 .fvtt-treasury .gc-cell {
-  background: var(--color-bg-option, rgba(0,0,0,0.02));
-  border: 1px solid var(--color-border-light-2, #ccc);
-  border-radius: 4px;
-  padding: 4px;
-  box-sizing: border-box;
-}
-
-.fvtt-treasury .gc-head-corner { grid-column: 1 / 2; }
-.fvtt-treasury .gc-colhead { text-align: center; font-weight: 600; }
-.fvtt-treasury .gc-rowhead { text-align: right; font-weight: 600; }
-
-.fvtt-treasury .gc-cell { display: grid; grid-template-rows: auto 1fr; gap: 2px; }
-.fvtt-treasury .gc-value { font-family: var(--font-monospace); font-size: 11px; opacity: .9; min-height: 1.2em; }
-
+  background: var(--color-bg-option, rgba(0,0,0,.02));
+  border: 1p
