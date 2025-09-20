@@ -273,3 +273,44 @@
 .fvtt-treasury-settings .ft-list { margin-top: .25rem; }
 .fvtt-treasury-settings .ft-item { display: flex; align-items: center; justify-content: space-between; padding: .25rem 0; border-bottom: 1px solid var(--color-border-light-2,#ccc); }
 .fvtt-treasury-settings .ft-item:last-child { border-bottom: 0; }
+
+/* Group Coin grid */
+.fvtt-treasury .gc-toolbar { margin: .25rem 0 .5rem; display: flex; gap: .5rem; align-items: center; }
+
+.fvtt-treasury .gc-grid {
+  display: grid;
+  grid-template-columns: 40px repeat(auto-fill, minmax(120px, 1fr));
+  /* The number of data columns is set by template; header/row cells align via explicit renders */
+  gap: 2px;
+  align-items: stretch;
+}
+
+.fvtt-treasury .gc-head-corner,
+.fvtt-treasury .gc-colhead,
+.fvtt-treasury .gc-rowhead,
+.fvtt-treasury .gc-cell {
+  background: var(--color-bg-option, rgba(0,0,0,0.02));
+  border: 1px solid var(--color-border-light-2, #ccc);
+  border-radius: 4px;
+  padding: 4px;
+  box-sizing: border-box;
+}
+
+.fvtt-treasury .gc-head-corner { grid-column: 1 / 2; }
+.fvtt-treasury .gc-colhead { text-align: center; font-weight: 600; }
+.fvtt-treasury .gc-rowhead { text-align: right; font-weight: 600; }
+
+.fvtt-treasury .gc-cell { display: grid; grid-template-rows: auto 1fr; gap: 2px; }
+.fvtt-treasury .gc-input { width: 100%; box-sizing: border-box; }
+.fvtt-treasury .gc-value { font-family: var(--font-monospace); font-size: 11px; opacity: .9; min-height: 1.2em; }
+
+/* Sticky headers in Group Coin grid */
+.fvtt-treasury .gc-colhead {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--color-bg-option, rgba(0,0,0,0.02));
+}
+.fvtt-treasury .gc-rowhead {
+  position: sticky; left: 0; z-index: 1;
+  background: var(--color-bg-option, rgba(0,0,0,0.02));
+}
+.fvtt-treasury .gc-head-corner { position: sticky; top: 0; left: 0; z-index: 3; }
