@@ -1,5 +1,4 @@
 <div class="ft-root">
-  <!-- TAB BAR -->
   <nav class="tabs ft-tabs-bar" data-group="main">
     {{#each tabs as |t|}}
       <a class="tab-link {{#if (eq ../activeTab t.id)}}active{{/if}}"
@@ -12,101 +11,17 @@
     {{/each}}
   </nav>
 
-  <!-- TAB CONTENT; .tab are direct children of the content container -->
   <section class="ft-tabs" data-group="main">
-    <div class="tab {{#if (eq activeTab "ledger")}}active{{/if}}" data-group="main" data-tab="ledger">
-      <div class="ft-section">
-        <h3><i class="fas fa-book"></i> Ledger</h3>
-        <div class="ft-row" data-ft-row>
-          <input type="text" name="label" placeholder="Label" />
-          <input type="number" name="amount" step="0.01" placeholder="0" />
-          <select name="currency">
-            <option value="cp">cp</option>
-            <option value="sp">sp</option>
-            <option value="ep">ep</option>
-            <option value="gp" selected>gp</option>
-            <option value="pp">pp</option>
-          </select>
-          <button type="button" data-action="addLedger" class="ft-btn"><i class="fas fa-plus"></i> Add</button>
-        </div>
-
-        <ul class="ft-list">
-          {{#each st.ledger as |row|}}
-          <li class="ft-item" data-id="{{row.id}}">
-            <span class="ft-label">{{row.label}}</span>
-            <span class="ft-amt">{{row.amount}} {{row.currency}}</span>
-            <button type="button" class="ft-icon" title="Delete" data-action="delLedger"><i class="fas fa-trash"></i></button>
-          </li>
-          {{/each}}
-        </ul>
-      </div>
+    <div class="tab {{#if (eq activeTab "group-coin")}}active{{/if}}" data-group="main" data-tab="group-coin">
+      <div class="ft-panel"><!-- Group Coin content mounts here --></div>
     </div>
 
-    <div class="tab {{#if (eq activeTab "items")}}active{{/if}}" data-group="main" data-tab="items">
-      <div class="ft-section">
-        <h3><i class="fas fa-box"></i> Items</h3>
-        <div class="ft-items-drop ft-dropzone">Drag & drop item links here</div>
-        <ul class="ft-list">
-          {{#each items as |it|}}
-          <li class="ft-item" data-id="{{it.id}}">
-            <span class="ft-label">@UUID[{{it.uuid}}]{ {{it.label}} }</span>
-            {{#if it.ownerNames.length}}
-              <span class="ft-owners">Owned by: {{it.ownerNames}}</span>
-            {{/if}}
-            <button type="button" class="ft-icon" title="Delete" data-action="delItem"><i class="fas fa-trash"></i></button>
-          </li>
-          {{/each}}
-        </ul>
-      </div>
+    <div class="tab {{#if (eq activeTab "items-found")}}active{{/if}}" data-group="main" data-tab="items-found">
+      <div class="ft-panel"><!-- Items Found content mounts here --></div>
     </div>
 
-    <div class="tab {{#if (eq activeTab "actors")}}active{{/if}}" data-group="main" data-tab="actors">
-      <div class="ft-section">
-        <h3><i class="fas fa-users"></i> Actors</h3>
-        <ul class="ft-list">
-          {{#each actors as |a|}}
-          <li class="ft-item">{{a.name}}</li>
-          {{/each}}
-        </ul>
-      </div>
-    </div>
-
-    <div class="tab {{#if (eq activeTab "check")}}active{{/if}}" data-group="main" data-tab="check">
-      <div class="ft-section">
-        <h3><i class="fas fa-list-check"></i> Checklist</h3>
-        <ul class="ft-list">
-          {{#each st.checklist as |c|}}
-          <li class="ft-item" data-id="{{c.id}}">
-            <input type="checkbox" {{#if c.done}}checked{{/if}} data-action="toggleCheck" />
-            <span class="ft-label">{{c.text}}</span>
-          </li>
-          {{/each}}
-        </ul>
-      </div>
-    </div>
-
-    <div class="tab {{#if (eq activeTab "settings")}}active{{/if}}" data-group="main" data-tab="settings">
-      <div class="ft-section">
-        <h3><i class="fas fa-gear"></i> Settings</h3>
-
-        <div class="ft-field">
-          <label>Theme</label>
-          <select data-action="setTheme" value="{{theme}}">
-            <option value="plain" {{#if (eq theme "plain")}}selected{{/if}}>Plain</option>
-            <option value="5e" {{#if (eq theme "5e")}}selected{{/if}}>5E</option>
-            <option value="cyberpunk" {{#if (eq theme "cyberpunk")}}selected{{/if}}>Cyberpunk</option>
-          </select>
-        </div>
-
-        <div class="ft-field">
-          <label>Import / Export</label>
-          <div class="ft-row">
-            <input id="ft-import-file" type="file" accept="application/json" style="display:none;" />
-            <button type="button" data-action="importJSON" class="ft-btn"><i class="fas fa-file-import"></i> Import JSON</button>
-            <button type="button" data-action="exportJSON" class="ft-btn"><i class="fas fa-file-export"></i> Export JSON</button>
-          </div>
-        </div>
-      </div>
+    <div class="tab {{#if (eq activeTab "checklist")}}active{{/if}}" data-group="main" data-tab="checklist">
+      <div class="ft-panel"><!-- Checklist content mounts here --></div>
     </div>
   </section>
 </div>
