@@ -34,8 +34,7 @@
           {{#each st.ledger as |row|}}
           <li class="ft-item" data-id="{{row.id}}">
             <span class="ft-label">{{row.label}}</span>
-            <span class="ft-amt">{{row.amount}} {{row.currency}}</span>
-            <button type="button" class="ft-icon" title="Delete" data-action="delLedger"><i class="fas fa-trash"></i></button>
+            <span class="ft-amt">{{row.amount}} {{row.currency}}</span> <button type="button" class="ft-icon" title="Delete" data-action="delLedger"><i class="fas fa-trash"></i></button>
           </li>
           {{/each}}
         </ul>
