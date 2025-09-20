@@ -1,12 +1,36 @@
 <div class="ft-section">
   <h3><i class="fas fa-coins"></i> Group Coin</h3>
-  <p class="hint">Placeholder UI. Currency set is configured in Settings.</p>
-  <ul class="ft-list">
-    {{#each currencies as |c|}}
-      <li class="ft-item">
-        <span class="ft-label">{{c.label}} ({{c.key}})</span>
-        <span class="ft-amt">rate {{c.rate}}</span>
-      </li>
+  <p class="hint">
+    {{#each help as |h|}}{{h}}<br/>{{/each}}
+  </p>
+
+  <div class="gc-toolbar">
+    {{#if editor}}
+      <button type="button" class="ft-btn" data-action="gc-add-row"><i class="fas fa-plus"></i> Row</button>
+      <button type="button" class="ft-btn" data-action="gc-add-col"><i class="fas fa-plus"></i> Col</button>
+      <button type="button" class="ft-btn" data-action="gc-del-row"><i class="fas fa-minus"></i> Row</button>
+      <button type="button" class="ft-btn" data-action="gc-del-col"><i class="fas fa-minus"></i> Col</button>
+    {{else}}
+      <span class="hint">View-only</span>
+    {{/if}}
+  </div>
+
+  <div class="gc-grid">
+    <div class="gc-head-corner"></div>
+    {{!-- Column headers --}}
+    {{#each headers as |H c|}}
+      <div class="gc-colhead">{{H}}</div>
     {{/each}}
-  </ul>
+
+    {{!-- Rows --}}
+    {{#each cells as |row r|}}
+      <div class="gc-rowhead">{{inc r}}</div>
+      {{#each row as |cell c|}}
+        <div class="gc-cell" data-r="{{../r}}" data-c="{{c}}">
+          <input class="gc-input" value="{{cell.raw}}" data-r="{{../r}}" data-c="{{c}}"/>
+          <div class="gc-value">{{lookup (lookup ../../displays ../r) c}}</div>
+        </div>
+      {{/each}}
+    {{/each}}
+  </div>
 </div>
