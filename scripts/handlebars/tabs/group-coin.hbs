@@ -1,0 +1,12 @@
+<div class="ft-section">
+  <h3><i class="fas fa-coins"></i> Group Coin</h3>
+  <p class="hint">Placeholder UI. Currency set is configured in Settings.</p>
+  <ul class="ft-list">
+    {{#each currencies as |c|}}
+      <li class="ft-item">
+        <span class="ft-label">{{c.label}} ({{c.key}})</span>
+        <span class="ft-amt">rate {{c.rate}}</span>
+      </li>
+    {{/each}}
+  </ul>
+</div>
