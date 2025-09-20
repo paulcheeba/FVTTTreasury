@@ -1,4 +1,4 @@
-/* global saveDataToFile, readTextFromFile */
+/* global game, saveDataToFile, readTextFromFile */
 import { State } from "./state.js";
 
 export class IO {
