@@ -49,7 +49,7 @@ export class FVTTTreasuryApp extends BaseApp {
   constructor(options = {}) {
     super(options);
     FVTTTreasuryApp.instance = this;
-    this._tabsCtl = null; // Tabs controller instance (rebuilt each render)
+    this._tabsCtl = null; // Tabs controller (rebuilt every render)
   }
 
   /* ------------------------------ RENDERING -------------------------------- */
@@ -82,29 +82,36 @@ export class FVTTTreasuryApp extends BaseApp {
   }
 
   /**
-   * After each render: (re)bind Foundry's Tabs controller to the fresh DOM and activate current tab.
+   * After each render:
+   * 1) Apply theme class to the window element (so CSS theme rules apply).
+   * 2) Rebind Foundry's Tabs controller to the fresh DOM and activate the current tab.
    * No timed refresh; re-render only after actions/state updates.
    */
   async _onRender() {
-    // Always create a fresh Tabs controller after render because the DOM was patched.
+    // 1) THEME: ensure `.fvtt-treasury.theme-<name>` is on the app element
+    try {
+      const el = this.element;
+      const theme = getTheme();
+      const themes = ["plain", "dnd5e", "5e", "cyberpunk"];
+      for (const t of themes) el.classList.remove(`theme-${t}`);
+      if (theme) el.classList.add(`theme-${theme}`);
+    } catch (_) {}
+
+    // 2) TABS: rebuild controller and activate stored tab
     this._tabsCtl = new foundry.applications.ux.Tabs({
       navSelector: 'nav.tabs[data-group="main"]',
       contentSelector: '.ft-tabs[data-group="main"]',
       initial: this.tabGroups.main ?? "ledger",
       callback: (tabId) => {
-        // Keep state in sync so reopening shows same tab
         this.tabGroups.main = tabId;
-        // Also tell ApplicationV2 (optional, but aligns with API expectations)
         try { this.changeTab(tabId, "main", { updatePosition: false }); } catch {}
-        // Visually ensure activation (in case of timing)
         try { this._tabsCtl?.activate(tabId, false); } catch {}
       }
     });
     this._tabsCtl.bind(this.element);
-    // Immediately activate current tab for the freshly-rendered DOM
     try { this._tabsCtl.activate(this.tabGroups.main ?? "ledger", false); } catch {}
 
-    // Drag/drop target for Items tab
+    // Drop target for Items tab
     const dropZone = this.element.querySelector(".ft-items-drop");
     if (dropZone && !dropZone._ftBound) {
       dropZone._ftBound = true;
@@ -137,7 +144,7 @@ export class FVTTTreasuryApp extends BaseApp {
   }
 
   async close(options = {}) {
-    this._tabsCtl = null; // deref; old listeners go away with DOM
+    this._tabsCtl = null;
     return super.close(options);
   }
 
