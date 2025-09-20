@@ -1,8 +1,8 @@
-/* global game, ui, Handlebars, foundry */
-import { getState, isEditor, getTheme } from "./settings.js";
-import { State } from "./state.js";
-import { ItemsLinking } from "./items.js";
-import { IO } from "./io.js";
+/* global game, ui, foundry */
+import { getThemeSetting } from "./settings.js";
+import { mountGroupCoin } from "./tabs/group-coin.js";
+import { mountItemsFound } from "./tabs/items-found.js";
+import { mountChecklist } from "./tabs/checklist.js";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 const BaseApp = HandlebarsApplicationMixin(ApplicationV2);
@@ -10,18 +10,16 @@ const BaseApp = HandlebarsApplicationMixin(ApplicationV2);
 export class FVTTTreasuryApp extends BaseApp {
   static instance;
 
-  /** Persisted active tab per group */
-  tabGroups = { main: "ledger" };
+  /** Persist active tab */
+  tabGroups = { main: "group-coin" };
 
   static TABS = {
     main: {
-      initial: "ledger",
+      initial: "group-coin",
       tabs: [
-        { id: "ledger",   icon: "fas fa-book",        label: "Ledger" },
-        { id: "items",    icon: "fas fa-box",         label: "Items" },
-        { id: "actors",   icon: "fas fa-users",       label: "Actors" },
-        { id: "check",    icon: "fas fa-list-check",  label: "Checklist" },
-        { id: "settings", icon: "fas fa-gear",        label: "Settings" }
+        { id: "group-coin", icon: "fas fa-coins",       label: "Group Coin" },
+        { id: "items-found", icon: "fas fa-box-open",    label: "Items Found" },
+        { id: "checklist",   icon: "fas fa-list-check",  label: "Checklist" }
       ]
     }
   };
@@ -32,13 +30,7 @@ export class FVTTTreasuryApp extends BaseApp {
     position: { width: 900, height: 650 },
     window: { title: "FVTTTreasury", icon: "fas fa-coins" },
     actions: {
-      addLedger:   (ev, target) => FVTTTreasuryApp.instance?._actAddLedger(ev, target),
-      delLedger:   (ev, target) => FVTTTreasuryApp.instance?._actDelById(ev, target, "ledger"),
-      delItem:     (ev, target) => FVTTTreasuryApp.instance?._actDelById(ev, target, "item"),
-      toggleCheck: (ev, target) => FVTTTreasuryApp.instance?._actToggleCheck(ev, target),
-      importJSON:  () => FVTTTreasuryApp.instance?._openImport(),
-      exportJSON:  () => IO.exportJSON(),
-      setTheme:    (ev, target) => FVTTTreasuryApp.instance?._actSetTheme(ev, target)
+      // No tab-local actions here; tabs mount their own listeners.
     }
   };
 
@@ -49,59 +41,31 @@ export class FVTTTreasuryApp extends BaseApp {
   constructor(options = {}) {
     super(options);
     FVTTTreasuryApp.instance = this;
-    this._tabsCtl = null; // Tabs controller (rebuilt every render)
+    this._tabsCtl = null;
   }
-
-  /* ------------------------------ RENDERING -------------------------------- */
 
   async _prepareContext() {
-    const st = getState();
-    const editor = isEditor(game.user);
-    const actors = game.actors?.contents?.map(a => ({ id: a.id, name: a.name })) ?? [];
-    const nameOf = new Map(actors.map(a => [a.id, a.name]));
-
-    const items = (st.items ?? []).map(it => {
-      const owners = ItemsLinking.whoOwns(it.uuid);
-      return { ...it, owners, ownerNames: owners.map(id => nameOf.get(id) ?? id) };
-    });
-
-    const theme = getTheme();
+    const theme = getThemeSetting();
     const tabs = FVTTTreasuryApp.TABS.main.tabs;
-    const activeTab = this.tabGroups.main ?? FVTTTreasuryApp.TABS.main.initial ?? "ledger";
-
-    return {
-      st,
-      editor,
-      actors,
-      items,
-      theme,
-      tabs,
-      activeTab,
-      treasurers: st.treasurers ?? []
-    };
+    const activeTab = this.tabGroups.main ?? FVTTTreasuryApp.TABS.main.initial;
+    return { theme, tabs, activeTab };
   }
 
-  /**
-   * After each render:
-   * 1) Apply theme class to the window element (so CSS theme rules apply).
-   * 2) Rebind Foundry's Tabs controller to the fresh DOM and activate the current tab.
-   * No timed refresh; re-render only after actions/state updates.
-   */
   async _onRender() {
-    // 1) THEME: ensure `.fvtt-treasury.theme-<name>` is on the app element
+    // Apply theme class
     try {
       const el = this.element;
-      const theme = getTheme();
+      const theme = getThemeSetting();
       const themes = ["plain", "dnd5e", "5e", "cyberpunk"];
       for (const t of themes) el.classList.remove(`theme-${t}`);
       if (theme) el.classList.add(`theme-${theme}`);
-    } catch (_) {}
+    } catch {}
 
-    // 2) TABS: rebuild controller and activate stored tab
+    // Bind Foundry Tabs controller
     this._tabsCtl = new foundry.applications.ux.Tabs({
       navSelector: 'nav.tabs[data-group="main"]',
       contentSelector: '.ft-tabs[data-group="main"]',
-      initial: this.tabGroups.main ?? "ledger",
+      initial: this.tabGroups.main ?? "group-coin",
       callback: (tabId) => {
         this.tabGroups.main = tabId;
         try { this.changeTab(tabId, "main", { updatePosition: false }); } catch {}
@@ -109,84 +73,28 @@ export class FVTTTreasuryApp extends BaseApp {
       }
     });
     this._tabsCtl.bind(this.element);
-    try { this._tabsCtl.activate(this.tabGroups.main ?? "ledger", false); } catch {}
+    try { this._tabsCtl.activate(this.tabGroups.main ?? "group-coin", false); } catch {}
 
-    // Drop target for Items tab
-    const dropZone = this.element.querySelector(".ft-items-drop");
-    if (dropZone && !dropZone._ftBound) {
-      dropZone._ftBound = true;
-      dropZone.addEventListener("dragover", ev => ev.preventDefault());
-      dropZone.addEventListener("drop", async (ev) => {
-        ev.preventDefault();
-        if (!isEditor(game.user)) return ui.notifications.warn("Not authorized");
-        const parsed = await ItemsLinking.parseDrop(ev);
-        if (!parsed) return;
-        await State.mutate("add-item", {
-          ts: new Date().toISOString(),
-          label: parsed.label,
-          uuid: parsed.uuid,
-          notes: ""
-        });
-      });
-    }
+    // Mount each tab’s content (from its own module + HBS)
+    await this._mountTabs();
+  }
 
-    // File import
-    const file = this.element.querySelector("#ft-import-file");
-    if (file && !file._ftBound) {
-      file._ftBound = true;
-      file.addEventListener("change", async (ev) => {
-        const f = ev.currentTarget.files?.[0];
-        if (!f) return;
-        await IO.importJSON(f);
-        ev.currentTarget.value = "";
-      });
-    }
+  async _mountTabs() {
+    const root = this.element;
+    const ctx = {}; // future shared context if needed
+    // Each tab module handles its own rendering + listeners.
+    const gc = root.querySelector('.tab[data-tab="group-coin"] .ft-panel');
+    if (gc) await mountGroupCoin(this, gc, ctx);
+
+    const it = root.querySelector('.tab[data-tab="items-found"] .ft-panel');
+    if (it) await mountItemsFound(this, it, ctx);
+
+    const cl = root.querySelector('.tab[data-tab="checklist"] .ft-panel');
+    if (cl) await mountChecklist(this, cl, ctx);
   }
 
   async close(options = {}) {
     this._tabsCtl = null;
     return super.close(options);
-  }
-
-  /* ------------------------------- ACTIONS --------------------------------- */
-
-  async _actAddLedger(ev, target) {
-    if (!isEditor(game.user)) return ui.notifications.warn("Not authorized");
-    const row = target.closest("[data-ft-row]");
-    const get = (sel) => row?.querySelector(sel);
-    const label = get('input[name="label"]')?.value?.trim();
-    const amount = Number(get('input[name="amount"]')?.value ?? 0);
-    const currency = get('select[name="currency"]')?.value ?? "gp";
-    if (!label) return ui.notifications.warn("Enter a label");
-    await State.mutate("add-ledger", {
-      ts: new Date().toISOString(),
-      label, amount, currency,
-      participantsActorIds: [],
-      notes: ""
-    });
-  }
-
-  async _actDelById(ev, target, kind) {
-    if (!isEditor(game.user)) return ui.notifications.warn("Not authorized");
-    const id = target.closest("[data-id]")?.dataset.id;
-    if (!id) return;
-    await State.mutate(kind === "item" ? "remove-item" : "remove-ledger", { id });
-  }
-
-  async _actToggleCheck(ev, target) {
-    if (!isEditor(game.user)) return ui.notifications.warn("Not authorized");
-    const id = target.closest("[data-id]")?.dataset.id;
-    if (!id) return;
-    await State.mutate("toggle-check", { id });
-  }
-
-  _openImport() {
-    this.element.querySelector("#ft-import-file")?.click();
-  }
-
-  async _actSetTheme(ev, target) {
-    if (!isEditor(game.user)) return;
-    const theme = target.value;
-    await State.mutate("set-theme", { theme });
   }
 }
