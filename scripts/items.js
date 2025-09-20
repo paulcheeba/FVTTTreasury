@@ -1,4 +1,3 @@
-//v13.0.0.6
 /* global foundry, game */
 
 /**
@@ -12,7 +11,6 @@
  */
 export class ItemsLinking {
   static get TextEditorImpl() {
-    // v13+ location; falls back if an older system provides global (kept for safety)
     return foundry?.applications?.ux?.TextEditor?.implementation ?? globalThis.TextEditor;
   }
 
@@ -28,7 +26,7 @@ export class ItemsLinking {
       const doc = await foundry.utils.fromUuid(uuid);
       if (doc?.documentName === "Item") label = doc.name;
     } catch {
-      // keep default label
+      // ignore
     }
     return { uuid, label };
   }
@@ -70,4 +68,3 @@ export class ItemsLinking {
     return owners;
   }
 }
-
