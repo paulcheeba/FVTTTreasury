@@ -19,7 +19,7 @@
   gap: 8px;
   /* inherit Foundry fonts/variables */
   font-family: var(--font-primary);
-  color: var(--color-text-dark-primary, #111);
+  color: var(--color-text-light-primary, #ffffff);
 }
 
 /* Allow the content area to scroll if needed */
@@ -63,7 +63,7 @@
   border-radius: 6px;
   cursor: pointer;
   user-select: none;
-  color: var(--color-text-dark-secondary, #333);
+  color: var(--color-text-dark-secondary, #edd0a4);
   text-decoration: none;
   transition: box-shadow .15s ease, color .15s ease, background .15s ease;
 }
@@ -71,14 +71,15 @@
 /* Hover/Focus state */
 .fvtt-treasury nav.tabs.ft-tabs-bar a.tab-link:hover,
 .fvtt-treasury nav.tabs.ft-tabs-bar a.tab-link:focus-visible {
-  background: var(--color-border-light-2, rgba(0,0,0,0.06));
+  background: var(--color-border-light, rgb(41 6 6));
+  box-shadow: 0 0 0 1px rgba(255,165,0,0.25) inset, 0 0 0 2px rgba(255,165,0,0.10);
   outline: none;
 }
 
 /* Active tab: orange glow as requested */
 .fvtt-treasury nav.tabs.ft-tabs-bar a.tab-link.active {
   color: #ffb164 !important;
-  text-shadow: 0 0 6px rgba(255,165,0,0.85), 0 0 10px rgba(255,140,0,0.5);
+  text-shadow: 0 0 6px rgb(255 165 0 / 85%), 0 0 10px rgba(255,140,0,0.5);
   box-shadow: 0 0 0 1px rgba(255,165,0,0.25) inset, 0 0 0 2px rgba(255,165,0,0.10);
   font-weight: 600;
 }
@@ -122,7 +123,7 @@
   padding: .25rem .5rem;
   border-radius: 6px;
   border: 1px solid var(--color-border-light-1, #bbb);
-  background: var(--color-bg-btn, #e9ecef);
+  background: var(--color-bg-btn, #381c1c);
   cursor: pointer;
 }
 
@@ -135,7 +136,7 @@
   cursor: pointer;
   border: none;
   background: transparent;
-  color: var(--color-text-dark-secondary, #333);
+  color: var(--color-text-dark-secondary, #710c0c);
   padding: 4px 6px;
   border-radius: 6px;
 }
@@ -207,7 +208,7 @@
   border-radius: 6px;
   margin-bottom: .5rem;
   text-align: center;
-  color: var(--color-text-dark-secondary, #333);
+  color: var(--color-text-dark-secondary, #575757);
   background: var(--color-bg-option, rgba(0,0,0,0.02));
 }
 
