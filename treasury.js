@@ -18,7 +18,8 @@ async function preloadTemplates() {
 }
 
 Hooks.once("init", () => {
-  try { Handlebars.registerHelper("eq", (a, b) => a === b); } catch (e) {}
+  
+  try { Handlebars.registerHelper("eq", (a, b) => a === b); Handlebars.registerHelper("inc", (n)=>Number(n)+1); } catch (e) {}
   registerSettings();
 });
 
