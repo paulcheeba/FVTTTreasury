@@ -285,6 +285,22 @@
   align-items: stretch;
 }
 
+/* Column separators + cell look */
+.fvtt-treasury .gc-log th.gc-th,
+.fvtt-treasury .gc-log td.gc-td {
+  border-right: 1px solid var(--color-border-light-2,#444);
+  border-bottom: 1px solid var(--color-border-light-2,#444);
+  padding: 4px 6px;
+  vertical-align: top;
+}
+.fvtt-treasury .gc-log th.gc-th:last-child,
+.fvtt-treasury .gc-log td.gc-td:last-child { border-right: 0; }
+
+/* Inputs */
+.fvtt-treasury .gc-input { width: 100%; box-sizing: border-box; }
+.fvtt-treasury .gc-input-coin { width: 6.5ch; text-align: right; }
+.fvtt-treasury .gc-input-text { width: 100%; resize: vertical; }
+
 .fvtt-treasury .gc-head-corner,
 .fvtt-treasury .gc-colhead,
 .fvtt-treasury .gc-rowhead,
