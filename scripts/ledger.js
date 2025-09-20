@@ -17,7 +17,6 @@ export class Ledger {
   static toBaseUnits(totals, currencies) {
     const map = Object.fromEntries((currencies ?? []).map(c => [c.key, c.rate]));
     return Object.entries(totals).reduce((sum, [k, v]) => sum + (v * (map[k] ?? 1)), 0);
-    // Example: cp=1, sp=10, gp=100, pp=1000
   }
 
   static splitEven(amount, count) {
