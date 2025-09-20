@@ -1,6 +1,5 @@
 /* global renderTemplate, ui, game */
 import { State } from "../state.js";
-import { getState } from "../state_helpers.js";
 import { isEditor } from "../settings.js";
 
 /** Convert column index to letters: 0->A, 25->Z, 26->AA ... */
@@ -25,7 +24,7 @@ function refToRC(ref) {
   return (r >= 0 && c >= 0) ? { r, c } : null;
 }
 
-/** Safe lookups with recursion guard */
+/** Build evaluator over a given sheet {rows, cols, data[{raw}][][]} */
 function buildEvaluator(sheet) {
   const rows = sheet.rows, cols = sheet.cols;
   const raw = sheet.data;
@@ -62,18 +61,13 @@ function buildEvaluator(sheet) {
     return s;
   };
 
-  // Basic parser: supports SUM(), ROUND(), FLOOR(), CEIL(), arithmetic, refs.
   function evalFormula(expr) {
-    // Replace SUM(RANGE or list)
-    // Handle ranges like A1:B5
     const safe = expr.toUpperCase();
 
-    // Replace ranges inside SUM()
     let replaced = safe.replace(/SUM\(\s*([A-Z]+\d+)\s*:\s*([A-Z]+\d+)\s*\)/g, (_, a, b) => {
       return `${sumRange(a,b)}`;
     });
 
-    // Replace individual refs (A1) with their numeric values
     replaced = replaced.replace(/\b([A-Z]+)(\d+)\b/g, (m, Ls, Ns) => {
       const rc = refToRC(Ls + Ns);
       if (!rc) return "0";
@@ -81,8 +75,6 @@ function buildEvaluator(sheet) {
       return Number.isFinite(v) ? String(v) : "NaN";
     });
 
-    // Allow commas inside function args; map known funcs to Math equivalents
-    // ROUND(x, n) => round to n decimals
     replaced = replaced.replace(/ROUND\(\s*([^,()]+)\s*,\s*([^)]+)\)/g, (_, x, n) => {
       const xv = Number(evalArith(x));
       const nv = Math.max(0, Number(evalArith(n))|0);
@@ -91,7 +83,6 @@ function buildEvaluator(sheet) {
       return String(Math.round(xv * f) / f);
     });
 
-    // FLOOR(x) / CEIL(x)
     replaced = replaced.replace(/FLOOR\(\s*([^)]+)\)/g, (_, x) => {
       const v = Number(evalArith(x));
       return Number.isFinite(v) ? String(Math.floor(v)) : "NaN";
@@ -101,13 +92,10 @@ function buildEvaluator(sheet) {
       return Number.isFinite(v) ? String(Math.ceil(v)) : "NaN";
     });
 
-    // Finally, evaluate arithmetic of numbers and operators only
     return Number(evalArith(replaced));
   }
 
   function evalArith(expr) {
-    // Only allow digits, operators, decimal points, parentheses, commas, minus/plus, whitespace, and 'N','a'
-    // (NaN may appear from earlier replacements; Number("NaN") -> NaN)
     const ok = /^[0-9+\-*/().,\sNa]+$/i.test(expr);
     if (!ok) return "NaN";
     try {
@@ -145,11 +133,15 @@ function computeDisplays(sheet) {
   return out;
 }
 
-export async function mountGroupCoin(app, el, ctx) {
-  const st = getState();
-  const sheet = st.coinSheet;
+export async function mountGroupCoin(app, el /*, ctx */) {
   const editor = isEditor(game.user);
 
+  // Tab-owned state lives under namespace "groupCoin"
+  const ns = "groupCoin";
+  const tabState = State.getTab(ns);
+  const sheet = tabState.coinSheet;
+
+  // Build headers + display values
   const headers = Array.from({ length: sheet.cols }, (_, c) => colToLabel(c));
   const displays = computeDisplays(sheet);
 
@@ -167,7 +159,7 @@ export async function mountGroupCoin(app, el, ctx) {
   });
   el.innerHTML = html;
 
-  // Local live preview: recompute displays as you type (no save yet)
+  // Local live preview: recompute displays as you type (no state write yet)
   const table = el.querySelector(".gc-grid");
   const recompute = () => {
     const local = {
@@ -196,11 +188,16 @@ export async function mountGroupCoin(app, el, ctx) {
       recompute();
     });
 
-    // Save on Enter or on blur
+    // Save a single cell on Enter/Blur via updateTab (no state.js changes needed)
     const commit = async (inp) => {
       const r = Number(inp.dataset.r), c = Number(inp.dataset.c);
       const raw = inp.value;
-      await State.mutate("gc-set", { r, c, raw });
+      await State.updateTab(ns, (draft) => {
+        const sh = draft.coinSheet;
+        if (!sh || r < 0 || c < 0 || r >= sh.rows || c >= sh.cols) return draft;
+        sh.data[r][c] = { raw: String(raw ?? "") };
+        return draft;
+      });
     };
 
     table?.addEventListener("keydown", async (ev) => {
@@ -215,20 +212,47 @@ export async function mountGroupCoin(app, el, ctx) {
       if (inp instanceof HTMLInputElement) await commit(inp);
     });
 
-    // Add/remove row/col
+    // Row/Col ops owned entirely by this tab
     el.querySelector('[data-action="gc-add-row"]')?.addEventListener("click", async () => {
-      await State.mutate("gc-add-row", {});
+      await State.updateTab(ns, (draft) => {
+        const sh = draft.coinSheet;
+        const cols = sh.cols;
+        sh.data.push(Array.from({ length: cols }, () => ({ raw: "" })));
+        sh.rows += 1;
+        return draft;
+      });
     });
     el.querySelector('[data-action="gc-add-col"]')?.addEventListener("click", async () => {
-      await State.mutate("gc-add-col", {});
+      await State.updateTab(ns, (draft) => {
+        const sh = draft.coinSheet;
+        for (const row of sh.data) row.push({ raw: "" });
+        sh.cols += 1;
+        return draft;
+      });
     });
     el.querySelector('[data-action="gc-del-row"]')?.addEventListener("click", async () => {
       const r = Number(prompt("Delete which row? (1-based)") || "0") - 1;
-      if (Number.isInteger(r) && r >= 0) await State.mutate("gc-del-row", { r });
+      if (!Number.isInteger(r) || r < 0) return;
+      await State.updateTab(ns, (draft) => {
+        const sh = draft.coinSheet;
+        if (sh.rows > 1 && r >= 0 && r < sh.rows) {
+          sh.data.splice(r, 1);
+          sh.rows -= 1;
+        }
+        return draft;
+      });
     });
     el.querySelector('[data-action="gc-del-col"]')?.addEventListener("click", async () => {
       const c = Number(prompt("Delete which column? (A=1, B=2, ...)") || "0") - 1;
-      if (Number.isInteger(c) && c >= 0) await State.mutate("gc-del-col", { c });
+      if (!Number.isInteger(c) || c < 0) return;
+      await State.updateTab(ns, (draft) => {
+        const sh = draft.coinSheet;
+        if (sh.cols > 1 && c >= 0 && c < sh.cols) {
+          for (const row of sh.data) row.splice(c, 1);
+          sh.cols -= 1;
+        }
+        return draft;
+      });
     });
   } else {
     // Viewers: disable inputs
