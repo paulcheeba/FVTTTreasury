@@ -1,21 +1,31 @@
-/* global game, Hooks, Handlebars */
+/* global Hooks, Handlebars, game */
 import { registerSettings, onReadySettings } from "./scripts/settings.js";
 import { State } from "./scripts/state.js";
 import { FVTTTreasuryApp } from "./scripts/app.js";
 
 export const MODULE_ID = "fvtt-treasury";
 
+/** Preload tab templates up-front so partial renders are fast. */
+async function preloadTemplates() {
+  const paths = [
+    "modules/fvtt-treasury/scripts/handlebars/app.hbs",
+    "modules/fvtt-treasury/scripts/handlebars/tabs/group-coin.hbs",
+    "modules/fvtt-treasury/scripts/handlebars/tabs/items-found.hbs",
+    "modules/fvtt-treasury/scripts/handlebars/tabs/checklist.hbs",
+    "modules/fvtt-treasury/scripts/handlebars/settings.hbs"
+  ];
+  return loadTemplates(paths);
+}
+
 Hooks.once("init", () => {
-  // Template helpers
   try { Handlebars.registerHelper("eq", (a, b) => a === b); } catch (e) {}
   registerSettings();
 });
 
 Hooks.once("ready", async () => {
-  // Initialize world state (GM authoritative container)
+  await preloadTemplates();
   await State.init();
 
-  // Global opener for macro/console
   game.fvttTreasury = {
     open: () => {
       const app = FVTTTreasuryApp.instance ?? new FVTTTreasuryApp();
@@ -24,20 +34,17 @@ Hooks.once("ready", async () => {
     }
   };
 
-  // Socket: GM applies mutations
+  // GM applies mutations; all clients re-render via settings onChange hook
   const eventName = `module.${MODULE_ID}`;
   game.socket?.on(eventName, async (payload) => {
     if (!game.user.isGM) return;
     await State.handleSocket(payload);
   });
 
-  // Re-render on state updates
+  // app rerender on state change (broadcasted by settings onChange)
   Hooks.on(`${MODULE_ID}:state-updated`, () => {
     FVTTTreasuryApp.instance?.render(false);
   });
 
   onReadySettings();
-
-  // Toolbar button intentionally disabled (will add toolbar.js later per your request)
-  // Hooks.on("getSceneControlButtons", () => {});
 });
