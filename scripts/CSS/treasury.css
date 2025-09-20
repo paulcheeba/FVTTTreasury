@@ -1,14 +1,18 @@
 /* ========================================================================
    FVTTTreasury — Complete Stylesheet
-   Version: v13.0.0.19
+   Version: v13.0.0.20
    Path: modules/fvtt-treasury/scripts/CSS/treasury.css
    ------------------------------------------------------------------------
-   - Namespaced under .fvtt-treasury
-   - AppV2 tabs via foundry.applications.api.ApplicationV2
-   - Sectionalized: Base, Tabs, Buttons, Utilities, Settings, Tabs content
+   Sections:
+     1) Base / Layout
+     2) Tabs Bar
+     3) Controls / Inputs / Buttons
+     4) Utilities + Settings
+     5) Group Coin Tab (toolbar, log, sticky header, totals, form)
+     6) (Optional) Spreadsheet grid (legacy sandbox)
    ====================================================================== */
 
-/* ========== Base / Layout ================================================= */
+/* ========== 1) Base / Layout ============================================ */
 
 .fvtt-treasury .ft-root {
   padding: 8px;
@@ -23,7 +27,7 @@
 
 .fvtt-treasury .ft-tabs {
   flex: 1 1 auto;
-  overflow: auto;
+  overflow: auto;     /* the whole app can scroll if content overflows the viewport */
   position: relative;
 }
 
@@ -35,30 +39,18 @@
   gap: .5rem;
 }
 
-.fvtt-treasury .hint {
-  opacity: .7;
-  font-style: italic;
-}
+.fvtt-treasury .hint { opacity: .7; font-style: italic; }
 
-/* ========== Tabs Bar ===================================================== */
+/* ========== 2) Tabs Bar ================================================= */
 
 .fvtt-treasury nav.tabs.ft-tabs-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin: 0 0 6px;
+  display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 6px;
 }
 
 .fvtt-treasury nav.tabs.ft-tabs-bar a.tab-link {
-  display: inline-flex;
-  align-items: center;
-  gap: .4rem;
-  padding: .25rem .5rem;
-  border-radius: 6px;
-  cursor: pointer;
-  user-select: none;
-  color: var(--color-text-dark-secondary, #edd0a4);
-  text-decoration: none;
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .25rem .5rem; border-radius: 6px; cursor: pointer; user-select: none;
+  color: var(--color-text-dark-secondary, #edd0a4); text-decoration: none;
   transition: box-shadow .15s ease, color .15s ease, background .15s ease;
 }
 
@@ -78,65 +70,34 @@
 
 /* Panels */
 .fvtt-treasury .ft-tabs .tab { display: none; }
-.fvtt-treasury .ft-tabs .tab.active {
-  display: block;
-  animation: ft-fade-in .12s ease-out;
-}
-@keyframes ft-fade-in {
-  from { opacity: 0; transform: translateY(2px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
+.fvtt-treasury .ft-tabs .tab.active { display: block; animation: ft-fade-in .12s ease-out; }
+@keyframes ft-fade-in { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
 
-/* ========== Controls / Inputs / Buttons ================================= */
+/* ========== 3) Controls / Inputs / Buttons ============================== */
 
 .fvtt-treasury input[type="text"],
 .fvtt-treasury input[type="number"],
 .fvtt-treasury select,
 .fvtt-treasury button,
-.fvtt-treasury .ft-btn {
-  font-family: var(--font-primary);
-  font-size: 12px;
-}
+.fvtt-treasury .ft-btn { font-family: var(--font-primary); font-size: 12px; }
 
 .fvtt-treasury input[type="text"],
 .fvtt-treasury input[type="number"],
-.fvtt-treasury select {
-  width: 100%;
-  box-sizing: border-box;
-}
+.fvtt-treasury select { width: 100%; box-sizing: border-box; }
 
 .fvtt-treasury .ft-btn {
-  padding: .25rem .5rem;
-  border-radius: 6px;
+  padding: .25rem .5rem; border-radius: 6px;
   border: 1px solid var(--color-border-light-1, #bbb);
-  background: var(--color-bg-btn, #381c1c);
-  cursor: pointer;
+  background: var(--color-bg-btn, #381c1c); cursor: pointer;
 }
 .fvtt-treasury .ft-btn:hover { filter: brightness(0.98); }
 
-.fvtt-treasury .ft-icon {
-  cursor: pointer;
-  border: none;
-  background: transparent;
-  color: var(--color-text-dark-secondary, #710c0c);
-  padding: 4px 6px;
-  border-radius: 6px;
-}
-.fvtt-treasury .ft-icon:hover {
-  background: var(--color-border-light-2, rgba(0,0,0,.06));
-}
+.fvtt-treasury .ft-icon { cursor: pointer; border: none; background: transparent; color: var(--color-text-dark-secondary, #710c0c); padding: 4px 6px; border-radius: 6px; }
+.fvtt-treasury .ft-icon:hover { background: var(--color-border-light-2, rgba(0,0,0,.06)); }
 
-/* Generic row layout used in some tabs */
-.fvtt-treasury .ft-row {
-  display: grid;
-  grid-template-columns: 1.4fr .7fr .6fr auto;
-  gap: .5rem;
-  align-items: center;
-  margin: .5rem 0;
-}
-@media (max-width: 720px) {
-  .fvtt-treasury .ft-row { grid-template-columns: 1fr 1fr; }
-}
+/* Generic row layout (used in some tabs) */
+.fvtt-treasury .ft-row { display: grid; grid-template-columns: 1.4fr .7fr .6fr auto; gap: .5rem; align-items: center; margin: .5rem 0; }
+@media (max-width: 720px) { .fvtt-treasury .ft-row { grid-template-columns: 1fr 1fr; } }
 
 /* Lists */
 .fvtt-treasury .ft-list { list-style: none; padding: 0; margin: .5rem 0 0 0; }
@@ -150,46 +111,18 @@
 .fvtt-treasury .ft-dropzone,
 .fvtt-treasury .ft-items-drop {
   border: 2px dashed var(--color-border-light-primary, #888);
-  padding: .6rem;
-  border-radius: 6px;
-  margin-bottom: .5rem;
-  text-align: center;
+  padding: .6rem; border-radius: 6px; margin-bottom: .5rem; text-align: center;
   color: var(--color-text-dark-secondary, #575757);
   background: var(--color-bg-option, rgba(0,0,0,.02));
 }
 .fvtt-treasury .ft-dropzone.is-dragover,
-.fvtt-treasury .ft-items-drop.is-dragover {
-  background: rgba(255,165,0,.07);
-  border-color: #ffb164;
-  box-shadow: 0 0 0 1px rgba(255,165,0,.2) inset;
-}
+.fvtt-treasury .ft-items-drop.is-dragover { background: rgba(255,165,0,.07); border-color: #ffb164; box-shadow: 0 0 0 1px rgba(255,165,0,.2) inset; }
 
-/* ========== Themes ======================================================= */
+/* ========== 4) Utilities + Settings ===================================== */
 
-.fvtt-treasury.theme-plain .ft-root {}
-.fvtt-treasury.theme-dnd5e .ft-root, .fvtt-treasury.theme-5e .ft-root { --ft-acc: #8b0000; }
-.fvtt-treasury.theme-dnd5e nav.tabs.ft-tabs-bar a.tab-link.active,
-.fvtt-treasury.theme-5e  nav.tabs.ft-tabs-bar a.tab-link.active {
-  color: #ffb164 !important;
-}
-.fvtt-treasury.theme-cyberpunk .ft-root { --ft-acc: #00ffd1; }
-.fvtt-treasury.theme-cyberpunk nav.tabs.ft-tabs-bar a.tab-link.active {
-  color: #00ffd1 !important;
-  text-shadow: 0 0 8px rgba(0,255,209,.8), 0 0 14px rgba(0,255,209,.5);
-  box-shadow: 0 0 0 1px rgba(0,255,209,.25) inset, 0 0 0 2px rgba(0,255,209,.10);
-}
-
-/* ========== Utilities ==================================================== */
-
-.fvtt-treasury .sr-only {
-  position: absolute !important;
-  height: 1px; width: 1px;
-  overflow: hidden; clip: rect(1px,1px,1px,1px);
-  white-space: nowrap; border: 0; padding: 0; margin: -1px;
-}
+.fvtt-treasury .sr-only { position: absolute !important; height: 1px; width: 1px; overflow: hidden; clip: rect(1px,1px,1px,1px); white-space: nowrap; border: 0; padding: 0; margin: -1px; }
 .fvtt-treasury .ft-uuid { font-family: var(--font-monospace); font-size: 11px; opacity: .8; word-break: break-all; }
 
-/* Settings sheet helpers */
 .fvtt-treasury-settings .ft-currency-row { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: .5rem; margin: .25rem 0; }
 .fvtt-treasury-settings .ft-section h3 { margin: 0 0 .5rem; }
 .fvtt-treasury-settings .ft-list { margin-top: .25rem; }
@@ -197,82 +130,107 @@
 .fvtt-treasury-settings .ft-item:last-child { border-bottom: 0; }
 
 /* ========================================================================
-   Group Coin Tab
-   - Toolbar, Log Table (sticky header), Totals, Entry Form
+   5) Group Coin Tab
    ====================================================================== */
 
 /* Toolbar */
 .fvtt-treasury .gc-toolbar { margin: .25rem 0 .5rem; display: flex; gap: .5rem; align-items: center; }
 
-/* Log table container: this is the scroller */
+/* Log container: ONLY this area scrolls. */
 .fvtt-treasury .gc-logwrap {
   position: relative;
-  max-height: 320px;
-  overflow: auto;              /* only this element should scroll */
+  height: 320px;          /* fixed height ensures inner scroll takes effect */
+  overflow: auto;         /* header sticks within this scroller */
   border: 1px solid var(--color-border-light-2,#555);
   border-radius: 6px;
 }
 
 /* Table basics */
-.fvtt-treasury .gc-log {
-  width: 100%;
-  border-collapse: separate;   /* sticky header works reliably with separate */
-  border-spacing: 0;
-}
+.fvtt-treasury .gc-log { width: 100%; border-collapse: separate; border-spacing: 0; }
 
-/* Header cells: sticky */
+/* Sticky header cells */
 .fvtt-treasury .gc-log thead th.gc-th {
-  position: sticky;
-  top: 0;
-  z-index: 2;
+  position: sticky; top: 0; z-index: 2;
   background: var(--color-bg-option, rgba(0,0,0,.45));
   backdrop-filter: blur(2px);
   box-shadow: 0 1px 0 0 var(--color-border-light-2,#444), 0 2px 6px rgba(0,0,0,.2);
 }
 
-/* Cells & separators */
+/* Column alignment helpers */
+.fvtt-treasury .gc-th-num, .fvtt-treasury .gc-td-num { text-align: right; }
+.fvtt-treasury .gc-td-center { text-align: center; }
+.fvtt-treasury .gc-td-wrap { white-space: normal; }
+.fvtt-treasury .gc-td-actions { text-align: center; white-space: nowrap; }
+
+/* Cells & grid lines */
 .fvtt-treasury .gc-log th.gc-th,
 .fvtt-treasury .gc-log td.gc-td {
   border-right: 1px solid var(--color-border-light-2,#444);
   border-bottom: 1px solid var(--color-border-light-2,#444);
-  padding: 4px 6px;
-  vertical-align: top;
+  padding: 4px 6px; vertical-align: top;
 }
 .fvtt-treasury .gc-log th.gc-th:last-child,
 .fvtt-treasury .gc-log td.gc-td:last-child { border-right: 0; }
 
-/* Inputs inside table */
+/* Textareas and coin inputs */
 .fvtt-treasury .gc-input { width: 100%; box-sizing: border-box; }
-.fvtt-treasury .gc-input-coin { width: 6.5ch; text-align: right; }
-.fvtt-treasury .gc-input-text { width: 100%; resize: vertical; }
-.fvtt-treasury .gc-td textarea.gc-input-text { min-height: 2.2em; white-space: pre-wrap; }
+.fvtt-treasury .gc-input-coin { text-align: right; }
+.fvtt-treasury .gc-input-text { width: 100%; resize: vertical; min-height: 2.2em; }
 
-/* Totals row */
-.fvtt-treasury .gc-totals {
-  margin-top: .5rem;
-  display: flex; flex-wrap: wrap;
-  gap: .75rem;
+/* Totals */
+.fvtt-treasury .gc-totals { margin-top: .5rem; display: flex; flex-wrap: wrap; gap: .75rem; }
+
+/* ---- Entry Form (2 rows) ---- */
+
+/* Row 1: date(20%) | dir(10%) | coins(70%) */
+.fvtt-treasury .gc-entry { margin-top: .75rem; display: grid; gap: .5rem; }
+.fvtt-treasury .gc-form-row-top {
+  display: grid;
+  grid-template-columns: 20% 10% 1fr;  /* 1fr = remaining 70% */
+  gap: .5rem; align-items: center;
 }
 
-/* Entry form with two rows */
-.fvtt-treasury .gc-entry { margin-top: .75rem; display: flex; flex-direction: column; gap: .5rem; }
-.fvtt-treasury .gc-entry .gc-form-row { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
-.fvtt-treasury .gc-entry .gc-coins { display: flex; flex-wrap: wrap; gap: .5rem; }
-.fvtt-treasury .gc-entry .gc-coin-field { display: flex; align-items: center; gap: .25rem; }
+/* Coins grid auto-fits up to 10 currencies evenly */
+.fvtt-treasury .gc-coins-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: .5rem;
+}
+.fvtt-treasury .gc-coin-field { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: .25rem; }
+.fvtt-treasury .gc-coin-label { opacity: .8; text-transform: lowercase; }
+
+/* Row 2: object(20%) | taken(20%) | note(50%) | add(10%) */
+.fvtt-treasury .gc-form-row-bottom {
+  display: grid; gap: .5rem; align-items: center;
+  grid-template-columns: 20% 20% 50% 10%;
+}
+.fvtt-treasury .gc-add-btn { width: 100%; }
+
+/* Small screens: stack more gracefully */
+@media (max-width: 900px) {
+  .fvtt-treasury .gc-form-row-top { grid-template-columns: 1fr; }
+  .fvtt-treasury .gc-form-row-bottom { grid-template-columns: 1fr; }
+}
 
 /* ========================================================================
-   (Optional) Spreadsheet-style grid (legacy experimental area)
+   6) (Optional) Spreadsheet-style grid (legacy sandbox)
    ====================================================================== */
 
 .fvtt-treasury .gc-grid {
   display: grid;
   grid-template-columns: 40px repeat(auto-fill, minmax(120px, 1fr));
-  gap: 2px;
-  align-items: stretch;
+  gap: 2px; align-items: stretch;
 }
 .fvtt-treasury .gc-head-corner,
 .fvtt-treasury .gc-colhead,
 .fvtt-treasury .gc-rowhead,
 .fvtt-treasury .gc-cell {
   background: var(--color-bg-option, rgba(0,0,0,.02));
-  border: 1p
+  border: 1px solid var(--color-border-light-2,#ccc);
+  border-radius: 4px; padding: 4px; box-sizing: border-box;
+}
+.fvtt-treasury .gc-head-corner { grid-column: 1 / 2; }
+.fvtt-treasury .gc-colhead { text-align: center; font-weight: 600; }
+.fvtt-treasury .gc-rowhead { text-align: right; font-weight: 600; }
+.fvtt-treasury .gc-cell { display: grid; grid-template-rows: auto 1fr; gap: 2px; }
+.fvtt-treasury .gc-value { font-family: var(--font-monospace); font-size: 11px; opacity: .9; min-height: 1.2em; }
