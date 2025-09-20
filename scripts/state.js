@@ -4,18 +4,17 @@ import { getState, saveState } from "./settings.js";
 
 export class State {
   static async init() {
-    // Ensure structure exists
     const st = getState();
     if (!st.version) {
-      st.version = "13.0.0.1";
+      st.version = "13.0.0.6";
       await saveState(st);
     }
   }
 
-  static _ensureId(collection, prefix="id") {
+  static _id(collection, prefix="id") {
     const id = foundry.utils.randomID();
-    if (!Array.isArray(collection)) return id;
-    if (collection.some(e => e.id === id)) return this._ensureId(collection, prefix);
+    if (!Array.isArray(collection)) return `${prefix}-${id}`;
+    if (collection.some(e => e.id === `${prefix}-${id}`)) return this._id(collection, prefix);
     return `${prefix}-${id}`;
   }
 
@@ -25,7 +24,7 @@ export class State {
 
     switch (action) {
       case "add-ledger": {
-        st.ledger.push({...data, id: this._ensureId(st.ledger, "lg")});
+        st.ledger.push({ ...data, id: this._id(st.ledger, "lg") });
         break;
       }
       case "remove-ledger": {
@@ -33,7 +32,7 @@ export class State {
         break;
       }
       case "add-item": {
-        st.items.push({...data, id: this._ensureId(st.items, "it")});
+        st.items.push({ ...data, id: this._id(st.items, "it") });
         break;
       }
       case "remove-item": {
@@ -46,7 +45,7 @@ export class State {
         break;
       }
       case "set-treasurers": {
-        st.treasurers = Array.from(new Set(data.ids));
+        st.treasurers = Array.from(new Set(data.ids || []));
         break;
       }
       case "set-theme": {
@@ -54,7 +53,7 @@ export class State {
         break;
       }
       case "import-json": {
-        // Full replace except treasurers and theme (keep current by default)
+        // Replace content, keeping current treasurers and theme unless provided
         const keep = { treasurers: st.treasurers, theme: st.theme };
         const next = Object.assign({}, st, data.state);
         next.treasurers = keep.treasurers;
@@ -74,10 +73,10 @@ export class State {
   // Client helper to send a mutation; GM applies
   static async mutate(action, data) {
     if (game.user.isGM) {
-      await this.handleSocket({action, data, sender: game.user.id});
+      await this.handleSocket({ action, data, sender: game.user.id });
     } else {
       const ev = `module.${MODULE_ID}`;
-      await game.socket?.emit(ev, {action, data, sender: game.user.id});
+      await game.socket?.emit(ev, { action, data, sender: game.user.id });
     }
   }
 }
