@@ -1,7 +1,8 @@
 /* global game, Hooks, foundry */
 import { MODULE_ID } from "../treasury.js";
-import { getState, saveState } from "./settings.js";
+import { getState, saveState } from "./state_helpers.js";
 
+/** Keep state_helpers small and reuse for app + settings */
 export class State {
   static async init() {
     const st = getState();
@@ -44,20 +45,8 @@ export class State {
         if (c) c.done = !c.done;
         break;
       }
-      case "set-treasurers": {
-        st.treasurers = Array.from(new Set(data.ids || []));
-        break;
-      }
-      case "set-theme": {
-        st.theme = data.theme;
-        break;
-      }
       case "import-json": {
-        // Replace content, keeping current treasurers and theme unless provided
-        const keep = { treasurers: st.treasurers, theme: st.theme };
         const next = Object.assign({}, st, data.state);
-        next.treasurers = keep.treasurers;
-        next.theme = keep.theme;
         await saveState(next);
         Hooks.callAll(`${MODULE_ID}:state-updated`, next);
         return;
@@ -70,13 +59,11 @@ export class State {
     Hooks.callAll(`${MODULE_ID}:state-updated`, st);
   }
 
-  // Client helper to send a mutation; GM applies
   static async mutate(action, data) {
     if (game.user.isGM) {
       await this.handleSocket({ action, data, sender: game.user.id });
     } else {
-      const ev = `module.${MODULE_ID}`;
-      await game.socket?.emit(ev, { action, data, sender: game.user.id });
+      await game.socket?.emit(`module.${MODULE_ID}`, { action, data, sender: game.user.id });
     }
   }
 }
