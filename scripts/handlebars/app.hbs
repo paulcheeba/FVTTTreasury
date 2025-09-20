@@ -1,17 +1,20 @@
 <div class="ft-root">
-  <!-- TAB BAR: Foundry expects .tabs, entries with data-action="tab", data-group, data-tab -->
+  <!-- TAB BAR -->
   <nav class="tabs ft-tabs-bar" data-group="main">
     {{#each tabs as |t|}}
-      <a class="tab-link" data-action="tab" data-group="main" data-tab="{{t.id}}">
+      <a class="tab-link {{#if (eq ../activeTab t.id)}}active{{/if}}"
+         data-action="tab"
+         data-group="main"
+         data-tab="{{t.id}}">
         <i class="{{t.icon}}"></i>
         <span>{{t.label}}</span>
       </a>
     {{/each}}
   </nav>
 
-  <!-- TAB CONTENT: .tab elements must be DIRECT children of the content container -->
+  <!-- TAB CONTENT; .tab are direct children of the content container -->
   <section class="ft-tabs" data-group="main">
-    <div class="tab" data-group="main" data-tab="ledger">
+    <div class="tab {{#if (eq activeTab "ledger")}}active{{/if}}" data-group="main" data-tab="ledger">
       <div class="ft-section">
         <h3><i class="fas fa-book"></i> Ledger</h3>
         <div class="ft-row" data-ft-row>
@@ -39,7 +42,7 @@
       </div>
     </div>
 
-    <div class="tab" data-group="main" data-tab="items">
+    <div class="tab {{#if (eq activeTab "items")}}active{{/if}}" data-group="main" data-tab="items">
       <div class="ft-section">
         <h3><i class="fas fa-box"></i> Items</h3>
         <div class="ft-items-drop ft-dropzone">Drag & drop item links here</div>
@@ -57,7 +60,7 @@
       </div>
     </div>
 
-    <div class="tab" data-group="main" data-tab="actors">
+    <div class="tab {{#if (eq activeTab "actors")}}active{{/if}}" data-group="main" data-tab="actors">
       <div class="ft-section">
         <h3><i class="fas fa-users"></i> Actors</h3>
         <ul class="ft-list">
@@ -68,7 +71,7 @@
       </div>
     </div>
 
-    <div class="tab" data-group="main" data-tab="check">
+    <div class="tab {{#if (eq activeTab "check")}}active{{/if}}" data-group="main" data-tab="check">
       <div class="ft-section">
         <h3><i class="fas fa-list-check"></i> Checklist</h3>
         <ul class="ft-list">
@@ -82,7 +85,7 @@
       </div>
     </div>
 
-    <div class="tab" data-group="main" data-tab="settings">
+    <div class="tab {{#if (eq activeTab "settings")}}active{{/if}}" data-group="main" data-tab="settings">
       <div class="ft-section">
         <h3><i class="fas fa-gear"></i> Settings</h3>
 
