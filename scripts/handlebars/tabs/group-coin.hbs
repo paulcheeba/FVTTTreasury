@@ -1,36 +1,122 @@
 <div class="ft-section">
   <h3><i class="fas fa-coins"></i> Group Coin</h3>
-  <p class="hint">
-    {{#each help as |h|}}{{h}}<br/>{{/each}}
+
+  <div class="gc-toolbar" style="display:flex; gap:.5rem; align-items:center; margin:.25rem 0 .5rem;">
+    <button type="button" class="ft-btn" data-action="gc-export">
+      <i class="fas fa-file-export"></i> Export Log
+    </button>
+    {{#unless canEdit}}<span class="hint">View-only</span>{{/unless}}
+  </div>
+
+  {{!-- Log Window --}}
+  <div class="gc-logwrap" style="max-height: 320px; overflow:auto; border:1px solid var(--color-border-light-2,#ccc); border-radius:6px;">
+    <table class="gc-log" style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr>
+          <th style="text-align:left; padding:4px;">Date</th>
+          <th style="text-align:center; padding:4px;">±</th>
+          <th style="text-align:right; padding:4px;">cp</th>
+          <th style="text-align:right; padding:4px;">sp</th>
+          <th style="text-align:right; padding:4px;">ep</th>
+          <th style="text-align:right; padding:4px;">gp</th>
+          <th style="text-align:right; padding:4px;">pp</th>
+          <th style="text-align:right; padding:4px;">in GP</th>
+          <th style="text-align:left;  padding:4px;">Object</th>
+          <th style="text-align:left;  padding:4px;">Taken By</th>
+          <th style="text-align:left;  padding:4px;">Note</th>
+          <th style="text-align:center; padding:4px; width:90px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#if rows.length}}
+          {{#each rows as |e|}}
+            {{#if (eq ../editingId e.id)}}
+              {{!-- Edit Row --}}
+              <tr data-id="{{e.id}}">
+                <td><input name="ts" type="date" value="{{e.ts}}" style="width:100%"/></td>
+                <td>
+                  <select name="direction" style="width:100%">
+                    <option value="add"    {{#if (eq e.direction "add")}}selected{{/if}}>+</option>
+                    <option value="remove" {{#if (eq e.direction "remove")}}selected{{/if}}>−</option>
+                  </select>
+                </td>
+                <td><input name="cp" type="number" step="1" value="{{e.cp}}" style="width:100%; text-align:right"/></td>
+                <td><input name="sp" type="number" step="1" value="{{e.sp}}" style="width:100%; text-align:right"/></td>
+                <td><input name="ep" type="number" step="1" value="{{e.ep}}" style="width:100%; text-align:right"/></td>
+                <td><input name="gp" type="number" step="1" value="{{e.gp}}" style="width:100%; text-align:right"/></td>
+                <td><input name="pp" type="number" step="1" value="{{e.pp}}" style="width:100%; text-align:right"/></td>
+                <td style="text-align:right"><em>{{e.gpValueSigned}}</em></td>
+                <td><input name="object" type="text" value="{{e.object}}" style="width:100%"/></td>
+                <td><input name="takenBy" type="text" value="{{e.takenBy}}" style="width:100%"/></td>
+                <td><input name="note" type="text" value="{{e.note}}" style="width:100%"/></td>
+                <td style="text-align:center; white-space:nowrap;">
+                  <button type="button" class="ft-btn" data-action="row-save"><i class="fas fa-check"></i></button>
+                  <button type="button" class="ft-btn" data-action="row-cancel"><i class="fas fa-xmark"></i></button>
+                </td>
+              </tr>
+            {{else}}
+              {{!-- Display Row --}}
+              <tr data-id="{{e.id}}">
+                <td style="padding:4px;">{{e.ts}}</td>
+                <td style="padding:4px; text-align:center;">{{#if (eq e.direction "remove")}}−{{else}}+{{/if}}</td>
+                <td style="padding:4px; text-align:right;">{{#if e.cp}}{{e.cp}}{{/if}}</td>
+                <td style="padding:4px; text-align:right;">{{#if e.sp}}{{e.sp}}{{/if}}</td>
+                <td style="padding:4px; text-align:right;">{{#if e.ep}}{{e.ep}}{{/if}}</td>
+                <td style="padding:4px; text-align:right;">{{#if e.gp}}{{e.gp}}{{/if}}</td>
+                <td style="padding:4px; text-align:right;">{{#if e.pp}}{{e.pp}}{{/if}}</td>
+                <td style="padding:4px; text-align:right;"><em>{{e.gpValueSigned}}</em></td>
+                <td style="padding:4px;">{{e.object}}</td>
+                <td style="padding:4px;">{{e.takenBy}}</td>
+                <td style="padding:4px;">{{e.note}}</td>
+                <td style="padding:4px; text-align:center; white-space:nowrap;">
+                  {{#if ../canEdit}}
+                    <button type="button" class="ft-btn" data-action="row-edit" title="Edit"><i class="fas fa-pen"></i></button>
+                    <button type="button" class="ft-btn" data-action="row-del" title="Delete"><i class="fas fa-trash"></i></button>
+                  {{/if}}
+                </td>
+              </tr>
+            {{/if}}
+          {{/each}}
+        {{else}}
+          <tr><td colspan="12" style="padding:6px;"><span class="hint">No transactions yet.</span></td></tr>
+        {{/if}}
+      </tbody>
+    </table>
+  </div>
+
+  {{!-- Totals Bar --}}
+  <div class="gc-totals" style="margin-top:.5rem; display:flex; flex-wrap:wrap; gap:.75rem;">
+    <div><strong>Totals:</strong></div>
+    <div>cp: <strong>{{totals.cp}}</strong></div>
+    <div>sp: <strong>{{totals.sp}}</strong></div>
+    <div>ep: <strong>{{totals.ep}}</strong></div>
+    <div>gp: <strong>{{totals.gp}}</strong></div>
+    <div>pp: <strong>{{totals.pp}}</strong></div>
+    <div>— in GP: <strong>{{totals.totalGP}}</strong></div>
+  </div>
+
+  {{!-- Entry Form --}}
+  <form id="gc-entry-form" class="gc-entry" style="margin-top:.75rem;">
+    <div class="ft-row" style="grid-template-columns: auto auto repeat(5, 1fr) 1.4fr 1.2fr 2fr auto; align-items:center;">
+      <input type="date" name="date" value="{{today}}" />
+      <select name="direction" aria-label="Direction">
+        {{#each directions as |d|}}
+          <option value="{{d.value}}">{{d.label}}</option>
+        {{/each}}
+      </select>
+      <input type="number" name="cp" step="1" placeholder="cp" />
+      <input type="number" name="sp" step="1" placeholder="sp" />
+      <input type="number" name="ep" step="1" placeholder="ep" />
+      <input type="number" name="gp" step="1" placeholder="gp" />
+      <input type="number" name="pp" step="1" placeholder="pp" />
+      <input type="text"   name="object"  placeholder="object / loot (optional)" />
+      <input type="text"   name="takenBy" placeholder="taken by (optional)" />
+      <input type="text"   name="note"    placeholder="note (optional)" />
+      <button type="submit" class="ft-btn"><i class="fas fa-plus"></i> Add</button>
+    </div>
+  </form>
+
+  <p class="hint" style="margin-top:.25rem;">
+    Tip: Use “Remove (−)” with “taken by” to record payouts or moving items to a player sheet; totals adjust automatically.
   </p>
-
-  <div class="gc-toolbar">
-    {{#if editor}}
-      <button type="button" class="ft-btn" data-action="gc-add-row"><i class="fas fa-plus"></i> Row</button>
-      <button type="button" class="ft-btn" data-action="gc-add-col"><i class="fas fa-plus"></i> Col</button>
-      <button type="button" class="ft-btn" data-action="gc-del-row"><i class="fas fa-minus"></i> Row</button>
-      <button type="button" class="ft-btn" data-action="gc-del-col"><i class="fas fa-minus"></i> Col</button>
-    {{else}}
-      <span class="hint">View-only</span>
-    {{/if}}
-  </div>
-
-  <div class="gc-grid">
-    <div class="gc-head-corner"></div>
-    {{!-- Column headers --}}
-    {{#each headers as |H c|}}
-      <div class="gc-colhead">{{H}}</div>
-    {{/each}}
-
-    {{!-- Rows --}}
-    {{#each cells as |row r|}}
-      <div class="gc-rowhead">{{inc r}}</div>
-      {{#each row as |cell c|}}
-        <div class="gc-cell" data-r="{{../r}}" data-c="{{c}}">
-          <input class="gc-input" value="{{cell.raw}}" data-r="{{../r}}" data-c="{{c}}"/>
-          <div class="gc-value">{{lookup (lookup ../../displays ../r) c}}</div>
-        </div>
-      {{/each}}
-    {{/each}}
-  </div>
 </div>
