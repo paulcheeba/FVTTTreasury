@@ -1,7 +1,7 @@
 <div class="ft-section">
   <h3><i class="fas fa-coins"></i> Group Coin</h3>
 
-  <div class="gc-toolbar" style="display:flex; gap:.5rem; align-items:center; margin:.25rem 0 .5rem;">
+  <div class="gc-toolbar">
     <button type="button" class="ft-btn" data-action="gc-export">
       <i class="fas fa-file-export"></i> Export Log
     </button>
@@ -9,9 +9,9 @@
   </div>
 
   {{!-- Log Window --}}
-  <div class="gc-logwrap" style="max-height: 320px; overflow-y:auto; border:1px solid var(--color-border-light-2,#555); border-radius:6px;">
-    <table class="gc-log" style="width:100%; border-collapse:collapse;">
-      <thead style="position: sticky; top: 0; z-index: 1;">
+  <div class="gc-logwrap">
+    <table class="gc-log">
+      <thead>
         <tr>
           <th class="gc-th">Date</th>
           <th class="gc-th">±</th>
@@ -64,7 +64,6 @@
                 <td class="gc-td" style="text-align:center;">{{#if (eq e.direction "remove")}}−{{else}}+{{/if}}</td>
 
                 {{#each ../coinDefs as |c|}}
-                  {{!-- show blank if 0 --}}
                   {{#with (lookup e.coins c.key) as |val|}}
                     <td class="gc-td" style="text-align:right;">{{#if val}}{{val}}{{/if}}</td>
                   {{/with}}
@@ -85,14 +84,18 @@
             {{/if}}
           {{/each}}
         {{else}}
-          <tr><td class="gc-td" colspan="{{add 5 (length coinDefs)}}" style="padding:6px;"><span class="hint">No transactions yet.</span></td></tr>
+          <tr>
+            <td class="gc-td" colspan="{{add 5 (length coinDefs)}}" style="padding:6px;">
+              <span class="hint">No transactions yet.</span>
+            </td>
+          </tr>
         {{/if}}
       </tbody>
     </table>
   </div>
 
   {{!-- Totals Bar (dynamic coins) --}}
-  <div class="gc-totals" style="margin-top:.5rem; display:flex; flex-wrap:wrap; gap:.75rem;">
+  <div class="gc-totals">
     <div><strong>Totals:</strong></div>
     {{#each coinDefs as |c|}}
       <div>{{c.key}}: <strong>{{lookup ../totals c.key}}</strong></div>
@@ -101,20 +104,18 @@
   </div>
 
   {{!-- Two-row Entry Form --}}
-  <form id="gc-entry-form" class="gc-entry" style="margin-top:.75rem; display:flex; flex-direction:column; gap:.5rem;">
-    {{!-- Row 1: date, direction, coins (wrap) --}}
-    <div class="gc-form-row" style="display:flex; flex-wrap:wrap; gap:.5rem; align-items:center;">
+  <form id="gc-entry-form" class="gc-entry">
+    {{!-- Row 1: date, direction, coins --}}
+    <div class="gc-form-row">
       <input type="date" name="date" value="{{today}}" class="gc-input"/>
-
       <select name="direction" class="gc-input">
         {{#each directions as |d|}}
           <option value="{{d.value}}">{{d.label}}</option>
         {{/each}}
       </select>
-
-      <div class="gc-coins" style="display:flex; flex-wrap:wrap; gap:.5rem;">
+      <div class="gc-coins">
         {{#each coinDefs as |c|}}
-          <label class="gc-coin-field" style="display:flex; align-items:center; gap:.25rem;">
+          <label class="gc-coin-field">
             <span style="min-width:2.2rem; text-transform:lowercase; opacity:.8;">{{c.key}}</span>
             <input type="number" name="coin:{{c.key}}" step="1" class="gc-input gc-input-coin" placeholder="{{c.key}}" />
           </label>
