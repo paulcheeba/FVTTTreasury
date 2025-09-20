@@ -1,4 +1,3 @@
-//v13.0.0.6
 /* global foundry, game, Handlebars, ui */
 import { getState, isEditor, getRefreshSec, getTheme } from "./settings.js";
 import { State } from "./state.js";
@@ -47,7 +46,7 @@ export class FVTTTreasuryApp extends BaseApp {
     const actors = game.actors.contents.map(a => ({ id: a.id, name: a.name }));
     const nameOf = new Map(actors.map(a => [a.id, a.name]));
 
-    // Compute item ownership (read-only; uses v12+ compendiumSource with quiet legacy fallback)
+    // Compute item ownership (read-only; v12+ compendiumSource with quiet legacy fallback)
     const items = (st.items ?? []).map(it => {
       const owners = ItemsLinking.whoOwns(it.uuid);
       return {
@@ -94,7 +93,7 @@ export class FVTTTreasuryApp extends BaseApp {
       });
     }
 
-    // Remember tab when user clicks one (so we reopen to the same tab after refresh)
+    // Remember tab on click so refresh returns to it
     const nav = this.element.querySelector('nav.tabs[data-group="main"]');
     if (nav) {
       nav.addEventListener("click", (ev) => {
@@ -112,29 +111,21 @@ export class FVTTTreasuryApp extends BaseApp {
       ev.currentTarget.value = "";
     });
 
-    // Restart auto-refresh (avoid stacking intervals)
+    // Restart auto-refresh (avoid stacking)
     clearInterval(this._interval);
     const sec = Math.max(5, Number(getRefreshSec() || 10));
 
-    // Full-window refresh per your request: reopen the application every N seconds.
+    // Full-window refresh; preserve active tab
     this._interval = setInterval(() => {
-      // Persist whichever tab is active right now before refresh
       const active = this.element.querySelector('.tab.active[data-group="main"]')?.dataset?.tab;
       if (active) this.tabGroups.main = active;
-
-      // Re-render the entire window (not just parts)
       this.render(true);
     }, sec * 1000);
   }
 
-  /**
-   * Ensure the tab indicated by this.tabGroups.main is active.
-   * Call twice (immediate + next frame) to avoid race conditions on first paint.
-   */
   _applyActiveTab() {
     const desired = this.tabGroups?.main ?? "ledger";
     try { this.changeTab(desired, "main", { updatePosition: false }); } catch {}
-    // In case the DOM hasn't fully settled yet, try again on next animation frame.
     try {
       requestAnimationFrame(() => {
         try { this.changeTab(desired, "main", { updatePosition: false }); } catch {}
@@ -195,4 +186,3 @@ export class FVTTTreasuryApp extends BaseApp {
     await State.mutate("set-theme", { theme });
   }
 }
-
