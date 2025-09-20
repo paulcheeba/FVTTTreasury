@@ -9,22 +9,20 @@
   </div>
 
   {{!-- Log Window --}}
-  <div class="gc-logwrap" style="max-height: 320px; overflow:auto; border:1px solid var(--color-border-light-2,#ccc); border-radius:6px;">
-    <table class="gc-log" style="width:100%; border-collapse:collapse;">
+  <div class="gc-logwrap" style="max-height: 320px; overflow:auto; border:1px solid var(--color-border-light-2,#555); border-radius:6px;">
+    <table class="gc-log" style="width:100%; border-collapse:separate; border-spacing:0;">
       <thead>
         <tr>
-          <th style="text-align:left; padding:4px;">Date</th>
-          <th style="text-align:center; padding:4px;">±</th>
-          <th style="text-align:right; padding:4px;">cp</th>
-          <th style="text-align:right; padding:4px;">sp</th>
-          <th style="text-align:right; padding:4px;">ep</th>
-          <th style="text-align:right; padding:4px;">gp</th>
-          <th style="text-align:right; padding:4px;">pp</th>
-          <th style="text-align:right; padding:4px;">in GP</th>
-          <th style="text-align:left;  padding:4px;">Object</th>
-          <th style="text-align:left;  padding:4px;">Taken By</th>
-          <th style="text-align:left;  padding:4px;">Note</th>
-          <th style="text-align:center; padding:4px; width:90px;">Actions</th>
+          <th class="gc-th">Date</th>
+          <th class="gc-th">±</th>
+          {{#each coinDefs as |c|}}
+            <th class="gc-th" style="text-align:right;">{{c.key}}</th>
+          {{/each}}
+          <th class="gc-th" style="text-align:right;">in {{anchorLabel}}</th>
+          <th class="gc-th" style="text-align:left;">Object</th>
+          <th class="gc-th" style="text-align:left;">Taken By</th>
+          <th class="gc-th" style="text-align:left;">Note</th>
+          <th class="gc-th" style="text-align:center; width:90px;">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -33,85 +31,102 @@
             {{#if (eq ../editingId e.id)}}
               {{!-- Edit Row --}}
               <tr data-id="{{e.id}}">
-                <td><input name="ts" type="date" value="{{e.ts}}" style="width:100%"/></td>
-                <td>
-                  <select name="direction" style="width:100%">
+                <td class="gc-td"><input name="ts" type="date" value="{{e.ts}}" class="gc-input"/></td>
+                <td class="gc-td">
+                  <select name="direction" class="gc-input">
                     <option value="add"    {{#if (eq e.direction "add")}}selected{{/if}}>+</option>
                     <option value="remove" {{#if (eq e.direction "remove")}}selected{{/if}}>−</option>
                   </select>
                 </td>
-                <td><input name="cp" type="number" step="1" value="{{e.cp}}" style="width:100%; text-align:right"/></td>
-                <td><input name="sp" type="number" step="1" value="{{e.sp}}" style="width:100%; text-align:right"/></td>
-                <td><input name="ep" type="number" step="1" value="{{e.ep}}" style="width:100%; text-align:right"/></td>
-                <td><input name="gp" type="number" step="1" value="{{e.gp}}" style="width:100%; text-align:right"/></td>
-                <td><input name="pp" type="number" step="1" value="{{e.pp}}" style="width:100%; text-align:right"/></td>
-                <td style="text-align:right"><em>{{e.gpValueSigned}}</em></td>
-                <td><input name="object" type="text" value="{{e.object}}" style="width:100%"/></td>
-                <td><input name="takenBy" type="text" value="{{e.takenBy}}" style="width:100%"/></td>
-                <td><input name="note" type="text" value="{{e.note}}" style="width:100%"/></td>
-                <td style="text-align:center; white-space:nowrap;">
-                  <button type="button" class="ft-btn" data-action="row-save"><i class="fas fa-check"></i></button>
-                  <button type="button" class="ft-btn" data-action="row-cancel"><i class="fas fa-xmark"></i></button>
+
+                {{#each ../coinDefs as |c|}}
+                  <td class="gc-td" style="text-align:right;">
+                    <input name="coin:{{c.key}}" type="number" step="1" value="{{lookup e.coins c.key}}" class="gc-input gc-input-coin"/>
+                  </td>
+                {{/each}}
+
+                <td class="gc-td" style="text-align:right;"><em>{{e.anchorVal}}</em></td>
+
+                <td class="gc-td"><textarea name="object"  rows="2" class="gc-input gc-input-text">{{e.object}}</textarea></td>
+                <td class="gc-td"><textarea name="takenBy" rows="2" class="gc-input gc-input-text">{{e.takenBy}}</textarea></td>
+                <td class="gc-td"><textarea name="note"    rows="2" class="gc-input gc-input-text">{{e.note}}</textarea></td>
+
+                <td class="gc-td" style="text-align:center; white-space:nowrap;">
+                  <button type="button" class="ft-btn" data-action="row-save" title="Save"><i class="fas fa-check"></i></button>
+                  <button type="button" class="ft-btn" data-action="row-cancel" title="Cancel"><i class="fas fa-xmark"></i></button>
+                  <button type="button" class="ft-btn" data-action="row-del" title="Delete"><i class="fas fa-trash"></i></button>
                 </td>
               </tr>
             {{else}}
               {{!-- Display Row --}}
               <tr data-id="{{e.id}}">
-                <td style="padding:4px;">{{e.ts}}</td>
-                <td style="padding:4px; text-align:center;">{{#if (eq e.direction "remove")}}−{{else}}+{{/if}}</td>
-                <td style="padding:4px; text-align:right;">{{#if e.cp}}{{e.cp}}{{/if}}</td>
-                <td style="padding:4px; text-align:right;">{{#if e.sp}}{{e.sp}}{{/if}}</td>
-                <td style="padding:4px; text-align:right;">{{#if e.ep}}{{e.ep}}{{/if}}</td>
-                <td style="padding:4px; text-align:right;">{{#if e.gp}}{{e.gp}}{{/if}}</td>
-                <td style="padding:4px; text-align:right;">{{#if e.pp}}{{e.pp}}{{/if}}</td>
-                <td style="padding:4px; text-align:right;"><em>{{e.gpValueSigned}}</em></td>
-                <td style="padding:4px;">{{e.object}}</td>
-                <td style="padding:4px;">{{e.takenBy}}</td>
-                <td style="padding:4px;">{{e.note}}</td>
-                <td style="padding:4px; text-align:center; white-space:nowrap;">
+                <td class="gc-td">{{e.ts}}</td>
+                <td class="gc-td" style="text-align:center;">{{#if (eq e.direction "remove")}}−{{else}}+{{/if}}</td>
+
+                {{#each ../coinDefs as |c|}}
+                  {{!-- show blank if 0 --}}
+                  {{#with (lookup e.coins c.key) as |val|}}
+                    <td class="gc-td" style="text-align:right;">{{#if val}}{{val}}{{/if}}</td>
+                  {{/with}}
+                {{/each}}
+
+                <td class="gc-td" style="text-align:right;"><em>{{e.anchorVal}}</em></td>
+                <td class="gc-td" style="white-space:normal;">{{e.object}}</td>
+                <td class="gc-td" style="white-space:normal;">{{e.takenBy}}</td>
+                <td class="gc-td" style="white-space:normal;">{{e.note}}</td>
+
+                <td class="gc-td" style="text-align:center; white-space:nowrap;">
                   {{#if ../canEdit}}
                     <button type="button" class="ft-btn" data-action="row-edit" title="Edit"><i class="fas fa-pen"></i></button>
-                    <button type="button" class="ft-btn" data-action="row-del" title="Delete"><i class="fas fa-trash"></i></button>
+                    <button type="button" class="ft-btn" data-action="row-del"  title="Delete"><i class="fas fa-trash"></i></button>
                   {{/if}}
                 </td>
               </tr>
             {{/if}}
           {{/each}}
         {{else}}
-          <tr><td colspan="12" style="padding:6px;"><span class="hint">No transactions yet.</span></td></tr>
+          <tr><td class="gc-td" colspan="{{add 5 (length coinDefs)}}" style="padding:6px;"><span class="hint">No transactions yet.</span></td></tr>
         {{/if}}
       </tbody>
     </table>
   </div>
 
-  {{!-- Totals Bar --}}
+  {{!-- Totals Bar (dynamic coins) --}}
   <div class="gc-totals" style="margin-top:.5rem; display:flex; flex-wrap:wrap; gap:.75rem;">
     <div><strong>Totals:</strong></div>
-    <div>cp: <strong>{{totals.cp}}</strong></div>
-    <div>sp: <strong>{{totals.sp}}</strong></div>
-    <div>ep: <strong>{{totals.ep}}</strong></div>
-    <div>gp: <strong>{{totals.gp}}</strong></div>
-    <div>pp: <strong>{{totals.pp}}</strong></div>
-    <div>— in GP: <strong>{{totals.totalGP}}</strong></div>
+    {{#each coinDefs as |c|}}
+      <div>{{c.key}}: <strong>{{lookup ../totals c.key}}</strong></div>
+    {{/each}}
+    <div>— in {{anchorLabel}}: <strong>{{../totalInAnchor}}</strong></div>
   </div>
 
-  {{!-- Entry Form --}}
-  <form id="gc-entry-form" class="gc-entry" style="margin-top:.75rem;">
-    <div class="ft-row" style="grid-template-columns: auto auto repeat(5, 1fr) 1.4fr 1.2fr 2fr auto; align-items:center;">
-      <input type="date" name="date" value="{{today}}" />
-      <select name="direction" aria-label="Direction">
+  {{!-- Two-row Entry Form --}}
+  <form id="gc-entry-form" class="gc-entry" style="margin-top:.75rem; display:flex; flex-direction:column; gap:.5rem;">
+    {{!-- Row 1: date, direction, coins (wrap) --}}
+    <div class="gc-form-row" style="display:flex; flex-wrap:wrap; gap:.5rem; align-items:center;">
+      <input type="date" name="date" value="{{today}}" class="gc-input"/>
+
+      <select name="direction" class="gc-input">
         {{#each directions as |d|}}
           <option value="{{d.value}}">{{d.label}}</option>
         {{/each}}
       </select>
-      <input type="number" name="cp" step="1" placeholder="cp" />
-      <input type="number" name="sp" step="1" placeholder="sp" />
-      <input type="number" name="ep" step="1" placeholder="ep" />
-      <input type="number" name="gp" step="1" placeholder="gp" />
-      <input type="number" name="pp" step="1" placeholder="pp" />
-      <input type="text"   name="object"  placeholder="object / loot (optional)" />
-      <input type="text"   name="takenBy" placeholder="taken by (optional)" />
-      <input type="text"   name="note"    placeholder="note (optional)" />
+
+      <div class="gc-coins" style="display:flex; flex-wrap:wrap; gap:.5rem;">
+        {{#each coinDefs as |c|}}
+          <label class="gc-coin-field" style="display:flex; align-items:center; gap:.25rem;">
+            <span style="min-width:2.2rem; text-transform:lowercase; opacity:.8;">{{c.key}}</span>
+            <input type="number" name="coin:{{c.key}}" step="1" class="gc-input gc-input-coin" placeholder="{{c.key}}" />
+          </label>
+        {{/each}}
+      </div>
+    </div>
+
+    {{!-- Row 2: object, takenBy, note, Add --}}
+    <div class="gc-form-row" style="display:grid; grid-template-columns: 2fr 1fr 3fr auto; gap:.5rem; align-items:center;">
+      <input type="text"   name="object"  class="gc-input" placeholder="object / loot (optional)" />
+      <input type="text"   name="takenBy" class="gc-input" placeholder="taken by (optional)" />
+      <input type="text"   name="note"    class="gc-input" placeholder="note (optional)" />
       <button type="submit" class="ft-btn"><i class="fas fa-plus"></i> Add</button>
     </div>
   </form>
