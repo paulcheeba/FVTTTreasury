@@ -1,4 +1,4 @@
-/* global game */
+/* global game, Hooks */
 import { MODULE_ID } from "../treasury.js";
 
 export function registerSettings() {
@@ -11,7 +11,7 @@ export function registerSettings() {
       ledger: [],        // {id, ts, label, amount, currency, payerUserId, participantsActorIds[], notes}
       items: [],         // {id, ts, label, uuid, assignedActorId, notes}
       checklist: [],     // {id, done, label}
-      theme: "plain",    // "plain" | "dnd5e" | "cyberpunk"
+      theme: "plain",    // "plain" | "dnd5e" | "cyberpunk" | "5e"
       treasurers: [],    // Array of user IDs
       currencies: [      // System-agnostic; editable later
         {key:"cp", label:"Copper",  rate:1},
@@ -19,6 +19,10 @@ export function registerSettings() {
         {key:"gp", label:"Gold",    rate:100},
         {key:"pp", label:"Platinum",rate:1000}
       ]
+    },
+    // IMPORTANT: when GM updates world state, all clients should re-render the app
+    onChange: () => {
+      try { Hooks.callAll(`${MODULE_ID}:state-updated`); } catch (_) {}
     }
   });
 
@@ -26,7 +30,7 @@ export function registerSettings() {
     scope: "client",
     config: true,
     name: "Auto-Refresh Seconds",
-    hint: "How frequently the UI should refresh while open.",
+    hint: "Deprecated (no timed refresh). Safe to ignore.",
     type: Number, default: 10, range: {min: 5, max: 120, step: 1}
   });
 }
