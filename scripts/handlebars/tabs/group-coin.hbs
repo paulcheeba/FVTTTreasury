@@ -8,7 +8,7 @@
     {{#unless canEdit}}<span class="hint">View-only</span>{{/unless}}
   </div>
 
-  {{!-- Log Window --}}
+  {{!-- Log Window (only this area scrolls; header sticks) --}}
   <div class="gc-logwrap">
     <table class="gc-log">
       <thead>
@@ -16,13 +16,13 @@
           <th class="gc-th">Date</th>
           <th class="gc-th">±</th>
           {{#each coinDefs as |c|}}
-            <th class="gc-th" style="text-align:right;">{{c.key}}</th>
+            <th class="gc-th gc-th-num">{{c.key}}</th>
           {{/each}}
-          <th class="gc-th" style="text-align:right;">in {{anchorLabel}}</th>
-          <th class="gc-th" style="text-align:left;">Object</th>
-          <th class="gc-th" style="text-align:left;">Taken By</th>
-          <th class="gc-th" style="text-align:left;">Note</th>
-          <th class="gc-th" style="text-align:center; width:90px;">Actions</th>
+          <th class="gc-th gc-th-num">in {{anchorLabel}}</th>
+          <th class="gc-th gc-th-text">Object</th>
+          <th class="gc-th gc-th-text">Taken By</th>
+          <th class="gc-th gc-th-text">Note</th>
+          <th class="gc-th gc-th-actions">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -40,18 +40,18 @@
                 </td>
 
                 {{#each ../coinDefs as |c|}}
-                  <td class="gc-td" style="text-align:right;">
+                  <td class="gc-td gc-td-num">
                     <input name="coin:{{c.key}}" type="number" step="1" value="{{lookup e.coins c.key}}" class="gc-input gc-input-coin"/>
                   </td>
                 {{/each}}
 
-                <td class="gc-td" style="text-align:right;"><em>{{e.anchorVal}}</em></td>
+                <td class="gc-td gc-td-num"><em>{{e.anchorVal}}</em></td>
 
                 <td class="gc-td"><textarea name="object"  rows="2" class="gc-input gc-input-text">{{e.object}}</textarea></td>
                 <td class="gc-td"><textarea name="takenBy" rows="2" class="gc-input gc-input-text">{{e.takenBy}}</textarea></td>
                 <td class="gc-td"><textarea name="note"    rows="2" class="gc-input gc-input-text">{{e.note}}</textarea></td>
 
-                <td class="gc-td" style="text-align:center; white-space:nowrap;">
+                <td class="gc-td gc-td-actions">
                   <button type="button" class="ft-btn" data-action="row-save" title="Save"><i class="fas fa-check"></i></button>
                   <button type="button" class="ft-btn" data-action="row-cancel" title="Cancel"><i class="fas fa-xmark"></i></button>
                   <button type="button" class="ft-btn" data-action="row-del" title="Delete"><i class="fas fa-trash"></i></button>
@@ -61,20 +61,20 @@
               {{!-- Display Row --}}
               <tr data-id="{{e.id}}">
                 <td class="gc-td">{{e.ts}}</td>
-                <td class="gc-td" style="text-align:center;">{{#if (eq e.direction "remove")}}−{{else}}+{{/if}}</td>
+                <td class="gc-td gc-td-center">{{#if (eq e.direction "remove")}}−{{else}}+{{/if}}</td>
 
                 {{#each ../coinDefs as |c|}}
                   {{#with (lookup e.coins c.key) as |val|}}
-                    <td class="gc-td" style="text-align:right;">{{#if val}}{{val}}{{/if}}</td>
+                    <td class="gc-td gc-td-num">{{#if val}}{{val}}{{/if}}</td>
                   {{/with}}
                 {{/each}}
 
-                <td class="gc-td" style="text-align:right;"><em>{{e.anchorVal}}</em></td>
-                <td class="gc-td" style="white-space:normal;">{{e.object}}</td>
-                <td class="gc-td" style="white-space:normal;">{{e.takenBy}}</td>
-                <td class="gc-td" style="white-space:normal;">{{e.note}}</td>
+                <td class="gc-td gc-td-num"><em>{{e.anchorVal}}</em></td>
+                <td class="gc-td gc-td-wrap">{{e.object}}</td>
+                <td class="gc-td gc-td-wrap">{{e.takenBy}}</td>
+                <td class="gc-td gc-td-wrap">{{e.note}}</td>
 
-                <td class="gc-td" style="text-align:center; white-space:nowrap;">
+                <td class="gc-td gc-td-actions">
                   {{#if ../canEdit}}
                     <button type="button" class="ft-btn" data-action="row-edit" title="Edit"><i class="fas fa-pen"></i></button>
                     <button type="button" class="ft-btn" data-action="row-del"  title="Delete"><i class="fas fa-trash"></i></button>
@@ -85,9 +85,7 @@
           {{/each}}
         {{else}}
           <tr>
-            <td class="gc-td" colspan="{{add 5 (length coinDefs)}}" style="padding:6px;">
-              <span class="hint">No transactions yet.</span>
-            </td>
+            <td class="gc-td" colspan="{{add 5 (length coinDefs)}}"><span class="hint">No transactions yet.</span></td>
           </tr>
         {{/if}}
       </tbody>
@@ -103,36 +101,36 @@
     <div>— in {{anchorLabel}}: <strong>{{../totalInAnchor}}</strong></div>
   </div>
 
-  {{!-- Two-row Entry Form --}}
+  {{!-- Two-row Entry Form (20% | 10% | 70%) and (20% | 20% | 50% | 10%) --}}
   <form id="gc-entry-form" class="gc-entry">
-    {{!-- Row 1: date, direction, coins --}}
-    <div class="gc-form-row">
+    <div class="gc-form-row-top">
       <input type="date" name="date" value="{{today}}" class="gc-input"/>
+
       <select name="direction" class="gc-input">
         {{#each directions as |d|}}
           <option value="{{d.value}}">{{d.label}}</option>
         {{/each}}
       </select>
-      <div class="gc-coins">
+
+      <div class="gc-coins-grid">
         {{#each coinDefs as |c|}}
           <label class="gc-coin-field">
-            <span style="min-width:2.2rem; text-transform:lowercase; opacity:.8;">{{c.key}}</span>
             <input type="number" name="coin:{{c.key}}" step="1" class="gc-input gc-input-coin" placeholder="{{c.key}}" />
+            <span class="gc-coin-label">{{c.key}}</span>
           </label>
         {{/each}}
       </div>
     </div>
 
-    {{!-- Row 2: object, takenBy, note, Add --}}
-    <div class="gc-form-row" style="display:grid; grid-template-columns: 2fr 1fr 3fr auto; gap:.5rem; align-items:center;">
+    <div class="gc-form-row-bottom">
       <input type="text"   name="object"  class="gc-input" placeholder="object / loot (optional)" />
       <input type="text"   name="takenBy" class="gc-input" placeholder="taken by (optional)" />
       <input type="text"   name="note"    class="gc-input" placeholder="note (optional)" />
-      <button type="submit" class="ft-btn"><i class="fas fa-plus"></i> Add</button>
+      <button type="submit" class="ft-btn gc-add-btn"><i class="fas fa-plus"></i> Add</button>
     </div>
   </form>
 
-  <p class="hint" style="margin-top:.25rem;">
+  <p class="hint gc-tip">
     Tip: Use “Remove (−)” with “taken by” to record payouts or moving items to a player sheet; totals adjust automatically.
   </p>
 </div>
