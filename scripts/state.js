@@ -2,132 +2,144 @@
 import { MODULE_ID } from "../treasury.js";
 import { getState, saveState } from "./state_helpers.js";
 
-function ensureCoinSheet(st) {
-  if (!st.coinSheet) {
+/**
+ * Namespaces owned by tabs. Each tab can set/read ONLY inside its namespace.
+ * - "groupCoin"   : { coinSheet: { rows, cols, data[{raw}][][] } , ...future }
+ * - "itemsFound"  : { items: [] , ...future }
+ * - "checklist"   : { entries: [] , ...future }
+ *
+ * state.js does NOT contain tab-specific business logic.
+ * Tabs should call State.getTab/State.setTab/State.updateTab and fully manage their data shape.
+ */
+const TAB_NAMESPACES = ["groupCoin", "itemsFound", "checklist"];
+
+/** Ensure the root shape exists and migrate any legacy fields into tab namespaces. */
+function normalizeAndMigrate(st) {
+  // Ensure root object
+  if (!st || typeof st !== "object") return { version: "13.0.0.13" };
+
+  st.version ??= "13.0.0.13";
+
+  // Ensure namespaces exist
+  for (const ns of TAB_NAMESPACES) st[ns] ??= {};
+
+  // ---- Migrations from earlier builds ----
+
+  // coinSheet (legacy top-level) -> groupCoin.coinSheet
+  if (st.coinSheet && !st.groupCoin.coinSheet) {
+    st.groupCoin.coinSheet = st.coinSheet;
+    delete st.coinSheet;
+  }
+  // items (legacy top-level) -> itemsFound.items
+  if (Array.isArray(st.items) && !Array.isArray(st.itemsFound.items)) {
+    st.itemsFound.items = st.items;
+    delete st.items;
+  }
+  // checklist (legacy top-level) -> checklist.entries
+  if (Array.isArray(st.checklist) && !Array.isArray(st.checklist.entries)) {
+    st.checklist.entries = st.checklist;
+    delete st.checklist;
+  }
+
+  // Seed defaults if missing
+  if (!st.groupCoin.coinSheet) {
     const rows = 10, cols = 6;
     const data = Array.from({ length: rows }, () =>
       Array.from({ length: cols }, () => ({ raw: "" }))
     );
-    st.coinSheet = { rows, cols, data };
-  } else {
-    // normalize any legacy shapes
-    const r = Math.max(1, Number(st.coinSheet.rows || 1));
-    const c = Math.max(1, Number(st.coinSheet.cols || 1));
-    if (!Array.isArray(st.coinSheet.data)) st.coinSheet.data = [];
-    for (let i = 0; i < r; i++) {
-      if (!Array.isArray(st.coinSheet.data[i])) st.coinSheet.data[i] = [];
-      for (let j = 0; j < c; j++) {
-        if (!st.coinSheet.data[i][j]) st.coinSheet.data[i][j] = { raw: "" };
-      }
-    }
-    st.coinSheet.rows = r; st.coinSheet.cols = c;
+    st.groupCoin.coinSheet = { rows, cols, data };
   }
+  if (!Array.isArray(st.itemsFound.items)) st.itemsFound.items = [];
+  if (!Array.isArray(st.checklist.entries)) st.checklist.entries = [];
+
+  return st;
 }
 
 export class State {
+  /** Initialize module world state and apply migrations. */
   static async init() {
-    const st = getState();
-    if (!st.version) st.version = "13.0.0.6";
-    ensureCoinSheet(st);
+    const st = normalizeAndMigrate(getState() || {});
     await saveState(st);
   }
 
-  static _id(collection, prefix="id") {
-    const id = foundry.utils.randomID();
-    if (!Array.isArray(collection)) return `${prefix}-${id}`;
-    if (collection.some(e => e.id === `${prefix}-${id}`)) return this._id(collection, prefix);
-    return `${prefix}-${id}`;
+  /** Read entire state (for advanced tasks). Prefer getTab for tab code. */
+  static read() {
+    return normalizeAndMigrate(getState() || {});
   }
 
-  static async handleSocket(payload) {
-    const { action, data } = payload || {};
-    const st = getState();
-    ensureCoinSheet(st);
+  /** Get a single tab namespace object (safe copy). */
+  static getTab(ns) {
+    const st = this.read();
+    if (!TAB_NAMESPACES.includes(ns)) return {};
+    // Return a deep clone so tabs can mutate freely before setTab
+    return foundry.utils.deepClone(st[ns] || {});
+  }
 
+  /**
+   * Set a tab namespace atomically (GM-authoritative).
+   * Tabs should construct the full namespace object and pass it here.
+   */
+  static async setTab(ns, value) {
+    if (!TAB_NAMESPACES.includes(ns)) return;
+
+    if (game.user.isGM) {
+      await this.#applySetTab(ns, value);
+    } else {
+      await game.socket?.emit(`module.${MODULE_ID}`, { action: "set-tab", ns, value, sender: game.user.id });
+    }
+  }
+
+  /**
+   * Update a tab namespace via a mutator callback (receives a draft object).
+   * Returns the updated object.
+   */
+  static async updateTab(ns, updater) {
+    const current = this.getTab(ns);
+    const next = typeof updater === "function" ? updater(foundry.utils.deepClone(current)) : current;
+    await this.setTab(ns, next);
+    return next;
+  }
+
+  /** Handle socket payloads (GM only). */
+  static async handleSocket(payload) {
+    if (!game.user.isGM) return;
+    const { action } = payload || {};
     switch (action) {
-      /* ---------- legacy ledger/items/checklist (kept for future use) ---------- */
-      case "add-ledger": {
-        st.ledger ??= [];
-        st.ledger.push({ ...data, id: this._id(st.ledger, "lg") });
-        break;
-      }
-      case "remove-ledger": {
-        st.ledger = (st.ledger ?? []).filter(e => e.id !== data.id);
-        break;
-      }
-      case "add-item": {
-        st.items ??= [];
-        st.items.push({ ...data, id: this._id(st.items, "it") });
-        break;
-      }
-      case "remove-item": {
-        st.items = (st.items ?? []).filter(e => e.id !== data.id);
-        break;
-      }
-      case "toggle-check": {
-        st.checklist ??= [];
-        const c = st.checklist.find(c => c.id === data.id);
-        if (c) c.done = !c.done;
-        break;
-      }
-      case "import-json": {
-        const next = Object.assign({}, st, data.state);
-        ensureCoinSheet(next);
-        await saveState(next);
-        Hooks.callAll(`${MODULE_ID}:state-updated`, next);
+      case "set-tab": {
+        const { ns, value } = payload;
+        if (!TAB_NAMESPACES.includes(ns)) return;
+        await this.#applySetTab(ns, value);
         return;
       }
-
-      /* ------------------------------ Group Coin ------------------------------ */
-      case "gc-set": {
-        const { r, c, raw } = data;
-        if (r >= 0 && c >= 0) {
-          st.coinSheet.data[r][c] = { raw: String(raw ?? "") };
+      case "import-json": {
+        // Accept either the new namespaced shape or legacy keys
+        const st = this.read();
+        const incoming = payload?.state || {};
+        // Namespaced direct copy (only known namespaces)
+        for (const ns of TAB_NAMESPACES) {
+          if (incoming[ns] && typeof incoming[ns] === "object") {
+            st[ns] = incoming[ns];
+          }
         }
-        break;
-      }
-      case "gc-add-row": {
-        const cols = st.coinSheet.cols;
-        st.coinSheet.data.push(Array.from({ length: cols }, () => ({ raw: "" })));
-        st.coinSheet.rows += 1;
-        break;
-      }
-      case "gc-add-col": {
-        for (const row of st.coinSheet.data) row.push({ raw: "" });
-        st.coinSheet.cols += 1;
-        break;
-      }
-      case "gc-del-row": {
-        const { r } = data;
-        if (st.coinSheet.rows > 1 && r >= 0 && r < st.coinSheet.rows) {
-          st.coinSheet.data.splice(r, 1);
-          st.coinSheet.rows -= 1;
+        // Legacy convenience: { coinSheet } -> groupCoin.coinSheet
+        if (incoming.coinSheet) {
+          st.groupCoin ??= {};
+          st.groupCoin.coinSheet = incoming.coinSheet;
         }
-        break;
+        await saveState(normalizeAndMigrate(st));
+        Hooks.callAll(`${MODULE_ID}:state-updated`);
+        return;
       }
-      case "gc-del-col": {
-        const { c } = data;
-        if (st.coinSheet.cols > 1 && c >= 0 && c < st.coinSheet.cols) {
-          for (const row of st.coinSheet.data) row.splice(c, 1);
-          st.coinSheet.cols -= 1;
-        }
-        break;
-      }
-
       default:
         return;
     }
-
-    await saveState(st);
-    Hooks.callAll(`${MODULE_ID}:state-updated`, st);
   }
 
-  // Client helper to send a mutation; GM applies
-  static async mutate(action, data) {
-    if (game.user.isGM) {
-      await this.handleSocket({ action, data, sender: game.user.id });
-    } else {
-      await game.socket?.emit(`module.${MODULE_ID}`, { action, data, sender: game.user.id });
-    }
+  /** INTERNAL: GM-side write + broadcast hook */
+  static async #applySetTab(ns, value) {
+    const st = this.read();
+    st[ns] = value || {};
+    await saveState(normalizeAndMigrate(st));
+    Hooks.callAll(`${MODULE_ID}:state-updated`);
   }
 }
