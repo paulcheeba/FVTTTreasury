@@ -10,10 +10,9 @@ const BaseApp = HandlebarsApplicationMixin(ApplicationV2);
 export class FVTTTreasuryApp extends BaseApp {
   static instance;
 
-  /** Persisted active tab per group (V13 expects you to manage this). */
+  /** Persisted active tab per group */
   tabGroups = { main: "ledger" };
 
-  /** Optional: describe tab set for the group (not required, but nice for consistency). */
   static TABS = {
     main: {
       initial: "ledger",
@@ -33,14 +32,13 @@ export class FVTTTreasuryApp extends BaseApp {
     position: { width: 900, height: 650 },
     window: { title: "FVTTTreasury", icon: "fas fa-coins" },
     actions: {
-      // Data mutations → render AFTER action (no timed refresh at all)
-      addLedger:    (ev, target) => FVTTTreasuryApp.instance?._actAddLedger(ev, target),
-      delLedger:    (ev, target) => FVTTTreasuryApp.instance?._actDelById(ev, target, "ledger"),
-      delItem:      (ev, target) => FVTTTreasuryApp.instance?._actDelById(ev, target, "item"),
-      toggleCheck:  (ev, target) => FVTTTreasuryApp.instance?._actToggleCheck(ev, target),
-      importJSON:   () => FVTTTreasuryApp.instance?._openImport(),
-      exportJSON:   () => IO.exportJSON(),
-      setTheme:     (ev, target) => FVTTTreasuryApp.instance?._actSetTheme(ev, target)
+      addLedger:   (ev, target) => FVTTTreasuryApp.instance?._actAddLedger(ev, target),
+      delLedger:   (ev, target) => FVTTTreasuryApp.instance?._actDelById(ev, target, "ledger"),
+      delItem:     (ev, target) => FVTTTreasuryApp.instance?._actDelById(ev, target, "item"),
+      toggleCheck: (ev, target) => FVTTTreasuryApp.instance?._actToggleCheck(ev, target),
+      importJSON:  () => FVTTTreasuryApp.instance?._openImport(),
+      exportJSON:  () => IO.exportJSON(),
+      setTheme:    (ev, target) => FVTTTreasuryApp.instance?._actSetTheme(ev, target)
     }
   };
 
@@ -51,7 +49,7 @@ export class FVTTTreasuryApp extends BaseApp {
   constructor(options = {}) {
     super(options);
     FVTTTreasuryApp.instance = this;
-    this._tabsCtl = null; // foundry.applications.ux.Tabs instance
+    this._tabsCtl = null; // Tabs controller instance (rebuilt each render)
   }
 
   /* ------------------------------ RENDERING -------------------------------- */
@@ -62,7 +60,6 @@ export class FVTTTreasuryApp extends BaseApp {
     const actors = game.actors?.contents?.map(a => ({ id: a.id, name: a.name })) ?? [];
     const nameOf = new Map(actors.map(a => [a.id, a.name]));
 
-    // Resolve owners for linked items (read-only)
     const items = (st.items ?? []).map(it => {
       const owners = ItemsLinking.whoOwns(it.uuid);
       return { ...it, owners, ownerNames: owners.map(id => nameOf.get(id) ?? id) };
@@ -85,30 +82,29 @@ export class FVTTTreasuryApp extends BaseApp {
   }
 
   /**
-   * After render: bind Foundry's Tabs controller once and wire other listeners.
-   * We DO NOT use any timed refresh; re-renders happen after actions/state updates.
+   * After each render: (re)bind Foundry's Tabs controller to the fresh DOM and activate current tab.
+   * No timed refresh; re-render only after actions/state updates.
    */
   async _onRender() {
-    // Bind tabs once per element lifecycle
-    if (!this._tabsCtl) {
-      this._tabsCtl = new foundry.applications.ux.Tabs({
-        navSelector: 'nav.tabs[data-group="main"]',
-        contentSelector: '.ft-tabs[data-group="main"]',
-        initial: this.tabGroups.main ?? "ledger",
-        callback: (tabId) => {
-          // Keep AppV2 state in sync (so reopening shows last tab)
-          this.tabGroups.main = tabId;
-          // Also let AppV2 record the change (optional but aligns with API intent)
-          try { this.changeTab(tabId, "main", { updatePosition: false }); } catch {}
-        }
-      });
-      this._tabsCtl.bind(this.element);
-    } else {
-      // If the app re-rendered due to a mutation, ensure controller shows the active tab
-      try { this._tabsCtl.activate(this.tabGroups.main ?? "ledger", false); } catch {}
-    }
+    // Always create a fresh Tabs controller after render because the DOM was patched.
+    this._tabsCtl = new foundry.applications.ux.Tabs({
+      navSelector: 'nav.tabs[data-group="main"]',
+      contentSelector: '.ft-tabs[data-group="main"]',
+      initial: this.tabGroups.main ?? "ledger",
+      callback: (tabId) => {
+        // Keep state in sync so reopening shows same tab
+        this.tabGroups.main = tabId;
+        // Also tell ApplicationV2 (optional, but aligns with API expectations)
+        try { this.changeTab(tabId, "main", { updatePosition: false }); } catch {}
+        // Visually ensure activation (in case of timing)
+        try { this._tabsCtl?.activate(tabId, false); } catch {}
+      }
+    });
+    this._tabsCtl.bind(this.element);
+    // Immediately activate current tab for the freshly-rendered DOM
+    try { this._tabsCtl.activate(this.tabGroups.main ?? "ledger", false); } catch {}
 
-    // Drag/drop target for the Items tab
+    // Drag/drop target for Items tab
     const dropZone = this.element.querySelector(".ft-items-drop");
     if (dropZone && !dropZone._ftBound) {
       dropZone._ftBound = true;
@@ -141,8 +137,7 @@ export class FVTTTreasuryApp extends BaseApp {
   }
 
   async close(options = {}) {
-    // Tabs controller does not need manual teardown, but deref it to be tidy
-    this._tabsCtl = null;
+    this._tabsCtl = null; // deref; old listeners go away with DOM
     return super.close(options);
   }
 
