@@ -7,13 +7,13 @@ export function registerSettings() {
     config: false,
     type: Object,
     default: {
-      version: "13.0.0.1",
+      version: "13.0.0.6",
       ledger: [],        // {id, ts, label, amount, currency, payerUserId, participantsActorIds[], notes}
       items: [],         // {id, ts, label, uuid, assignedActorId, notes}
       checklist: [],     // {id, done, label}
       theme: "plain",    // "plain" | "dnd5e" | "cyberpunk"
       treasurers: [],    // Array of user IDs
-      currencies: [      // System-agnostic; you can edit in Settings later
+      currencies: [      // System-agnostic; editable later
         {key:"cp", label:"Copper",  rate:1},
         {key:"sp", label:"Silver",  rate:10},
         {key:"gp", label:"Gold",    rate:100},
@@ -32,7 +32,7 @@ export function registerSettings() {
 }
 
 export function onReadySettings() {
-  // placeholder for future migrations
+  // migrations placeholder
 }
 
 export function getState() {
@@ -47,14 +47,14 @@ export function getTheme() {
   return getState().theme || "plain";
 }
 
+export function getTreasurers() {
+  return getState().treasurers ?? [];
+}
+
 export async function setTheme(theme) {
   const st = getState();
   st.theme = theme;
   await saveState(st);
-}
-
-export function getTreasurers() {
-  return getState().treasurers ?? [];
 }
 
 export async function setTreasurers(ids) {
