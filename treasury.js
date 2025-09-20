@@ -6,17 +6,16 @@ import { FVTTTreasuryApp } from "./scripts/app.js";
 export const MODULE_ID = "fvtt-treasury";
 
 Hooks.once("init", () => {
-  // Helper for templates
+  // Template helpers
   try { Handlebars.registerHelper("eq", (a, b) => a === b); } catch (e) {}
   registerSettings();
 });
 
 Hooks.once("ready", async () => {
-  // Prepare world state container (GM authoritative)
+  // Initialize world state (GM authoritative container)
   await State.init();
 
-  // ---- GLOBAL OPEN HELPER (macro target) ----
-  // Your macro calls game.fvttTreasury.open(), so make sure it's always defined.
+  // Global opener for macro/console
   game.fvttTreasury = {
     open: () => {
       const app = FVTTTreasuryApp.instance ?? new FVTTTreasuryApp();
@@ -25,20 +24,20 @@ Hooks.once("ready", async () => {
     }
   };
 
-  // ---- SOCKET: GM applies mutations ----
+  // Socket: GM applies mutations
   const eventName = `module.${MODULE_ID}`;
   game.socket?.on(eventName, async (payload) => {
     if (!game.user.isGM) return;
     await State.handleSocket(payload);
   });
 
-  // Re-render open app(s) when world state changes
+  // Re-render on state updates
   Hooks.on(`${MODULE_ID}:state-updated`, () => {
     FVTTTreasuryApp.instance?.render(false);
   });
 
   onReadySettings();
 
-  // 🔕 Toolbar tool intentionally disabled for now, per your request.
-  // Hooks.on("getSceneControlButtons", (controls) => { /* disabled */ });
+  // Toolbar button intentionally disabled (will add toolbar.js later per your request)
+  // Hooks.on("getSceneControlButtons", () => {});
 });
