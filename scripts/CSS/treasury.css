@@ -293,11 +293,9 @@
   padding: 4px 6px;
   vertical-align: top;
 }
-.fvtt-treasury .gc-log th.gc-th:last-child,
-.fvtt-treasury .gc-log td.gc-td:last-child { border-right: 0; }
 
 /* Inputs */
-.fvtt-treasury .gc-input { width: 100%; box-sizing: border-box; }
+.fvtt-treasury .gc-input { width: 50%; box-sizing: border-box; }
 .fvtt-treasury .gc-input-coin { width: 6.5ch; text-align: right; }
 .fvtt-treasury .gc-input-text { width: 100%; resize: vertical; }
 
@@ -317,16 +315,5 @@
 .fvtt-treasury .gc-rowhead { text-align: right; font-weight: 600; }
 
 .fvtt-treasury .gc-cell { display: grid; grid-template-rows: auto 1fr; gap: 2px; }
-.fvtt-treasury .gc-input { width: 100%; box-sizing: border-box; }
 .fvtt-treasury .gc-value { font-family: var(--font-monospace); font-size: 11px; opacity: .9; min-height: 1.2em; }
 
-/* Sticky headers in Group Coin grid */
-.fvtt-treasury .gc-colhead {
-  position: sticky; top: 0; z-index: 2;
-  background: var(--color-bg-option, rgba(0,0,0,0.02));
-}
-.fvtt-treasury .gc-rowhead {
-  position: sticky; left: 0; z-index: 1;
-  background: var(--color-bg-option, rgba(0,0,0,0.02));
-}
-.fvtt-treasury .gc-head-corner { position: sticky; top: 0; left: 0; z-index: 3; }
