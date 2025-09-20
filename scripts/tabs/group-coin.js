@@ -1,76 +1,79 @@
-/* FVTTTreasury v13.0.0.16 — Group Coin Tab (self-contained)
-   Features:
-   - Persistent transaction log (coins/items) with (+/-), date, object, takenBy, note
-   - Inline edit & delete per row (GM/Treasurers)
-   - Running totals by currency and as total in GP
-   - Entry form to add transactions
-   - Export log (namespaced export only)
+/* FVTTTreasury v13.0.0.17 — Group Coin Tab (dynamic coins + 2-row form)
+   - Column separators, multi-line text fields, inline edit/delete
+   - Two-row entry form (coins can wrap, supports up to 10 currencies)
+   - Dynamic currencies from Settings; backward compatible with cp/sp/ep/gp/pp legacy
 */
 
 import { State } from "../state.js";
-import { isEditor } from "../settings.js";
-
-/* ----------------------------- Helpers ----------------------------- */
+import { isEditor, getCurrenciesEffective } from "../settings.js";
 
 const NS = "groupCoin";
 
-/** Convert coin bundle to base copper */
-function toCp({ cp=0, sp=0, ep=0, gp=0, pp=0 } = {}) {
-  const n = (v) => Number.isFinite(+v) ? +v : 0;
-  return n(cp) + n(sp)*10 + n(ep)*50 + n(gp)*100 + n(pp)*1000;
-}
-/** Convert cp to a human-friendly GP float */
-function cpToGp(cp) {
-  return (Number(cp) || 0) / 100;
-}
-/** Parse integer from input (blank -> 0) */
-function parseInt0(v) {
-  const n = parseInt(v, 10);
-  return Number.isFinite(n) ? n : 0;
-}
-/** Generate id */
-function rid() { return globalThis.foundry?.utils?.randomID?.() ?? Math.random().toString(36).slice(2); }
+/* ----------------------------- Helpers ----------------------------- */
 
-/** Format ISO date to YYYY-MM-DD (local) */
+function parseInt0(v) { const n = parseInt(v, 10); return Number.isFinite(n) ? n : 0; }
+function rid() { return globalThis.foundry?.utils?.randomID?.() ?? Math.random().toString(36).slice(2); }
 function todayStr(d = new Date()) {
   const pad = (x) => String(x).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 }
-
-/** Ensure namespace shape exists */
 function ensureNS(tab) {
   tab = tab && typeof tab === "object" ? tab : {};
   if (!Array.isArray(tab.log)) tab.log = [];
   return tab;
 }
 
-/** Compute running totals (currency breakdown and GP total) */
-function computeTotals(log) {
-  const totals = { cp:0, sp:0, ep:0, gp:0, pp:0 };
-  for (const e of log) {
-    const sign = (e.direction === "remove") ? -1 : 1;
-    totals.cp += sign * parseInt0(e.cp);
-    totals.sp += sign * parseInt0(e.sp);
-    totals.ep += sign * parseInt0(e.ep);
-    totals.gp += sign * parseInt0(e.gp);
-    totals.pp += sign * parseInt0(e.pp);
+function coinsFromEntry(entry, coinKeys) {
+  const out = {};
+  for (const k of coinKeys) {
+    // prefer object form then legacy field
+    out[k] = parseInt0(entry?.coins?.[k] ?? entry?.[k]);
   }
-  const totalCP = toCp(totals);
-  return { ...totals, totalGP: cpToGp(totalCP) };
+  return out;
 }
 
-/** Map raw entries for display */
-function mapDisplay(log) {
-  return log.map(e => {
-    const cp = parseInt0(e.cp), sp = parseInt0(e.sp), ep = parseInt0(e.ep), gp = parseInt0(e.gp), pp = parseInt0(e.pp);
+function computeTotals(log, coinDefs, anchorKey) {
+  // totals per currency and total in anchor
+  const totals = {};
+  for (const { key } of coinDefs) totals[key] = 0;
+
+  let baseTotal = 0;                          // in smallest unit (assume rate=1 is smallest)
+  const rateMap = Object.fromEntries(coinDefs.map(c => [c.key, Number(c.rate || 1)]));
+
+  for (const e of log) {
     const sign = (e.direction === "remove") ? -1 : 1;
-    const rowCp = toCp({cp,sp,ep,gp,pp}) * sign;
+    const coins = coinsFromEntry(e, coinDefs.map(c => c.key));
+    for (const k of Object.keys(coins)) {
+      const amt = parseInt0(coins[k]) * sign;
+      totals[k] += amt;
+      baseTotal += amt * (rateMap[k] || 1);
+    }
+  }
+  const anchorRate = rateMap[anchorKey] || 1;
+  const totalInAnchor = baseTotal / anchorRate;
+
+  return { totals, totalInAnchor };
+}
+
+function mapDisplay(log, coinDefs, anchorKey) {
+  const rateMap = Object.fromEntries(coinDefs.map(c => [c.key, Number(c.rate || 1)]));
+  const coinKeys = coinDefs.map(c => c.key);
+  const anchorRate = rateMap[anchorKey] || 1;
+
+  return log.map(e => {
+    const sign = (e.direction === "remove") ? -1 : 1;
+    const coins = coinsFromEntry(e, coinKeys);
+
+    let base = 0;
+    for (const k of coinKeys) base += parseInt0(coins[k]) * (rateMap[k] || 1);
+    const signedBase = base * sign;
+    const anchorVal = signedBase / anchorRate;
+
     return {
       ...e,
-      cp, sp, ep, gp, pp,
+      coins,
       sign,
-      gpValue: cpToGp(Math.abs(rowCp)),          // absolute value in GP for row
-      gpValueSigned: cpToGp(rowCp)               // signed value in GP for row
+      anchorVal
     };
   });
 }
@@ -79,23 +82,32 @@ function mapDisplay(log) {
 
 export async function mountGroupCoin(app, el /*, ctx */) {
   const canEdit = isEditor(game.user);
+  const coinDefs = getCurrenciesEffective(); // [{key,label,rate}, ...] up to 10
+  const coinKeys = coinDefs.map(c => c.key);
+
+  // Anchor for "in X" column: prefer gp, else the highest-rate currency
+  const gp = coinDefs.find(c => c.key.toLowerCase() === "gp");
+  const anchor = gp ?? coinDefs.reduce((a,b)=> (Number(a.rate||1) > Number(b.rate||1) ? a : b));
+  const anchorKey = anchor.key;
+  const anchorLabel = anchor.label || anchor.key;
+
   let editingId = null;
 
   const render = async () => {
     const tab = ensureNS(State.getTab(NS));
-    const rows = mapDisplay(tab.log);
-    const totals = computeTotals(tab.log);
+    const rows = mapDisplay(tab.log, coinDefs, anchorKey);
+    const agg = computeTotals(tab.log, coinDefs, anchorKey);
 
     const html = await renderTemplate("modules/fvtt-treasury/scripts/handlebars/tabs/group-coin.hbs", {
       canEdit,
       rows,
-      totals,
+      coinDefs,
+      anchorKey,
+      anchorLabel,
+      totals: agg.totals,
+      totalInAnchor: agg.totalInAnchor,
       editingId,
       today: todayStr(),
-      kinds: [
-        { value: "coins", label: "Coins" },
-        { value: "item",  label: "Item Value" }
-      ],
       directions: [
         { value: "add",    label: "Add (+)" },
         { value: "remove", label: "Remove (−)" }
@@ -110,37 +122,43 @@ export async function mountGroupCoin(app, el /*, ctx */) {
     /* ----- Export log ----- */
     el.querySelector('[data-action="gc-export"]')?.addEventListener("click", () => {
       const tab = ensureNS(State.getTab(NS));
-      const blob = new Blob([JSON.stringify({ [NS]: { log: tab.log } }, null, 2)], { type: "application/json" });
+      const content = JSON.stringify({ [NS]: { log: tab.log } }, null, 2);
       const name = `fvtt-treasury-groupcoin-log-${new Date().toISOString().replace(/[:.]/g,"-")}.json`;
-      saveDataToFile(blob, "application/json", name);
+      saveDataToFile(content, "application/json", name);
     });
 
-    /* ----- Add entry form (GM/Treasurers) ----- */
+    /* ----- Add entry form (two-row layout) ----- */
     const form = el.querySelector("#gc-entry-form");
     if (canEdit && form) {
       form.addEventListener("submit", async (ev) => {
         ev.preventDefault();
         const fd = new FormData(form);
+
+        // Build coins object from dynamic keys
+        const coins = {};
+        for (const def of coinDefs) coins[def.key] = parseInt0(fd.get(`coin:${def.key}`));
+
+        // Quick emptiness check
+        const sumCoins = Object.values(coins).reduce((a,b)=>a+Math.abs(parseInt0(b)),0);
+
         const entry = {
           id: rid(),
           ts: String(fd.get("date") || todayStr()),
-          type: String(fd.get("kind") || "coins"),                // "coins" | "item"
-          direction: String(fd.get("direction") || "add"),        // "add" | "remove"
-          object: String(fd.get("object") || "").trim(),          // item/loot name or blank
+          direction: String(fd.get("direction") || "add"),
+          object: String(fd.get("object") || "").trim(),
           takenBy: String(fd.get("takenBy") || "").trim(),
           note: String(fd.get("note") || "").trim(),
-          cp: parseInt0(fd.get("cp")),
-          sp: parseInt0(fd.get("sp")),
-          ep: parseInt0(fd.get("ep")),
-          gp: parseInt0(fd.get("gp")),
-          pp: parseInt0(fd.get("pp"))
+          coins
         };
 
-        // Gentle guard: if everything is zero and no object/note, do nothing
-        if (!entry.object && !entry.note && entry.cp+entry.sp+entry.ep+entry.gp+entry.pp === 0) {
+        if (!entry.object && !entry.note && sumCoins === 0) {
           ui.notifications.warn("Enter some coin values or an object/note.");
           return;
         }
+
+        // Back-compat: also mirror legacy fields for the classic 5 coins if present
+        const legacyKeys = ["cp","sp","ep","gp","pp"];
+        for (const k of legacyKeys) if (k in coins) entry[k] = coins[k];
 
         await State.updateTab(NS, (draft) => {
           draft = ensureNS(draft);
@@ -148,11 +166,11 @@ export async function mountGroupCoin(app, el /*, ctx */) {
           return draft;
         });
 
-        // Reset light fields: keep kind/direction/date
+        // Reset light fields
+        for (const def of coinDefs) form.querySelector(`[name="coin:${def.key}"]`).value = "";
         form.querySelector('[name="object"]').value = "";
         form.querySelector('[name="takenBy"]').value = "";
         form.querySelector('[name="note"]').value = "";
-        ["cp","sp","ep","gp","pp"].forEach(n => form.querySelector(`[name="${n}"]`).value = "");
       });
     }
 
@@ -180,18 +198,22 @@ export async function mountGroupCoin(app, el /*, ctx */) {
           if (!id) return;
 
           const pick = (name) => row.querySelector(`[name="${name}"]`)?.value ?? "";
+
+          // Collect coins dynamically
+          const coins = {};
+          for (const def of coinDefs) coins[def.key] = parseInt0(pick(`coin:${def.key}`));
+          const legacyKeys = ["cp","sp","ep","gp","pp"];
+          const legacy = {};
+          for (const k of legacyKeys) if (k in coins) legacy[k] = coins[k];
+
           const updated = {
             ts:        String(pick("ts") || todayStr()),
-            type:      String(pick("type") || "coins"),
             direction: String(pick("direction") || "add"),
             object:    String(pick("object") || "").trim(),
             takenBy:   String(pick("takenBy") || "").trim(),
             note:      String(pick("note") || "").trim(),
-            cp: parseInt0(pick("cp")),
-            sp: parseInt0(pick("sp")),
-            ep: parseInt0(pick("ep")),
-            gp: parseInt0(pick("gp")),
-            pp: parseInt0(pick("pp"))
+            coins,
+            ...legacy
           };
 
           await State.updateTab(NS, (draft) => {
