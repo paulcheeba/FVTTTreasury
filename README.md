@@ -1,4 +1,4 @@
-# FVTTTreasury (v13.0.0.12)
+# FVTTTreasury (v13.0.0.20)
 
 System-agnostic party treasury for Foundry VTT v13+. Features:
 
