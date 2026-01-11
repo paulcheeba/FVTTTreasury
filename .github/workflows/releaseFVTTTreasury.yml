@@ -264,20 +264,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Resolve release page URL
-        id: release
-        if: ${{ success() }}
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const tag = `${{ steps.pkg.outputs.tag }}`;
-            const { data: rel } = await github.rest.repos.getReleaseByTag({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag
-            });
-            core.setOutput('html_url', rel.html_url);
-
       - name: Write workflow summary
         shell: bash
         run: |
@@ -286,7 +272,7 @@ jobs:
           VERSION="${{ inputs.version }}"
           MANIFEST_URL="${{ steps.pkg.outputs.manifest_url }}"
           DOWNLOAD_URL="${{ steps.pkg.outputs.download_url }}"
-          RELEASE_URL="${{ steps.release.outputs.html_url }}"
+          RELEASE_URL="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${{ steps.pkg.outputs.tag }}"
 
           {
             echo "## Release Summary"
@@ -297,11 +283,7 @@ jobs:
             echo "- Draft?: ${{ inputs.draft }}"
             echo "- Manifest URL: ${MANIFEST_URL}"
             echo "- Download URL: ${DOWNLOAD_URL}"
-            if [ -n "${RELEASE_URL}" ]; then
-              echo "- Release Page: ${RELEASE_URL}"
-            else
-              echo "- Release Page: (not available)"
-            fi
+            echo "- Release Page: ${RELEASE_URL}"
             echo "- Release Note Type: ${{ steps.flags.outputs.release_notes_mode }}"
             echo
             echo "### Release Note"
