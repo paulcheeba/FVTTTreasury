@@ -29,7 +29,7 @@ jobs:
           OEV_CHANGELOG: ${{ inputs.changelog }}
         run: |
           CHANGELOG="${OEV_CHANGELOG:-$(git log -1 --pretty=%B)}"
-          curl -X POST https://oevtt.com/api/creator/releases \
+          curl --fail-with-body -X POST https://oevtt.com/api/creator/releases \
             -H "Authorization: Bearer $OEV_API_KEY" \
             -F "zip=@module.zip" \
             -F "product_id=$OEV_PRODUCT_ID" \
