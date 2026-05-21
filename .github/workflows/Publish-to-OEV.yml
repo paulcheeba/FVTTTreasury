@@ -1,6 +1,19 @@
+name: Publish to OEV
+
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g. v1.2.3)'
+        type: string
+        required: true
+      changelog:
+        description: 'Release notes (leave blank to use latest commit)'
+        type: string
+        required: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -12,11 +25,13 @@ jobs:
         env:
           OEV_API_KEY: ${{ secrets.OEV_API_KEY }}
           OEV_PRODUCT_ID: ${{ secrets.OEV_PRODUCT_ID }}
-          OEV_VERSION: ${{ github.ref_name }}
+          OEV_VERSION: ${{ inputs.version || github.ref_name }}
+          OEV_CHANGELOG: ${{ inputs.changelog }}
         run: |
+          CHANGELOG="${OEV_CHANGELOG:-$(git log -1 --pretty=%B)}"
           curl -X POST https://oevtt.com/api/creator/releases \
             -H "Authorization: Bearer $OEV_API_KEY" \
             -F "zip=@module.zip" \
             -F "product_id=$OEV_PRODUCT_ID" \
-            -F "changelog=$(git log -1 --pretty=%B)" \
+            -F "changelog=$CHANGELOG" \
             -F "version=$OEV_VERSION"
