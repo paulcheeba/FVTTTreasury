@@ -9,12 +9,14 @@ jobs:
       - name: Build zip
         run: zip -r module.zip . -x "*.git*"
       - name: Publish to OEV
+        env:
+          OEV_API_KEY: ${{ secrets.OEV_API_KEY }}
+          OEV_PRODUCT_ID: ${{ secrets.OEV_PRODUCT_ID }}
+          OEV_VERSION: ${{ github.ref_name }}
         run: |
           curl -X POST https://oevtt.com/api/creator/releases \
-            -H "Authorization: Bearer ${{ secrets.OEV_API_KEY }}" \
+            -H "Authorization: Bearer $OEV_API_KEY" \
             -F "zip=@module.zip" \
-            -F "product_id=${{ secrets.OEV_PRODUCT_ID }}" \
+            -F "product_id=$OEV_PRODUCT_ID" \
             -F "changelog=$(git log -1 --pretty=%B)" \
-            -F "version=${{ github.ref_name }}"
-
-
+            -F "version=$OEV_VERSION"
